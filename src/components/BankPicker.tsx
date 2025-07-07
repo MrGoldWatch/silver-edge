@@ -85,8 +85,7 @@ export const BankPicker = forwardRef<BankPickerRef, BankPickerProps>(({ value, o
   const selectBank = async (bank: string) => {
     onChangeText(bank);
     setShowSuggestions(false);
-    inputRef.current?.blur(); // Remove focus from input
-
+    
     // Load nearby branches for selected bank
     if (userLocation) {
       setIsLoadingBranches(true);
@@ -98,15 +97,18 @@ export const BankPicker = forwardRef<BankPickerRef, BankPickerProps>(({ value, o
           onDropdownStateChange?.(true);
         } else {
           onDropdownStateChange?.(false);
+          inputRef.current?.blur(); // Only blur if no branches to show
         }
       } catch (error) {
         console.error('Error loading branches:', error);
         onDropdownStateChange?.(false);
+        inputRef.current?.blur(); // Only blur on error
       } finally {
         setIsLoadingBranches(false);
       }
     } else {
       onDropdownStateChange?.(false);
+      inputRef.current?.blur(); // Only blur if no location
     }
   };
 
