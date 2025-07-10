@@ -11,7 +11,8 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
-import { Hunt } from '../types/Hunt';
+import { Hunt, HuntHelpers, DenominationEntry } from '../types/Hunt';
+import { HuntMigration } from '../utils/HuntMigration';
 import { HuntStorage } from '../services/HuntStorage';
 
 interface HuntEditModalProps {
@@ -27,37 +28,67 @@ export const HuntEditModal: React.FC<HuntEditModalProps> = ({
   onClose,
   onSave,
 }) => {
-  const [silverCount, setSilverCount] = useState('');
-  const [processingNotes, setProcessingNotes] = useState('');
+  const [denominationData, setDenominationData] = useState<{[key: string]: {silverCount: string}}>({});
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     if (hunt) {
-      setSilverCount(hunt.silverCoinsFound.toString());
-      setProcessingNotes(hunt.processingNotes || '');
+      const data: {[key: string]: {silverCount: string}} = {};
+
+      // Handle both legacy and new hunt formats
+      if (HuntMigration.isNewHunt(hunt)) {
+        hunt.denominations.forEach((denom) => {
+          data[denom.denomination] = {
+            silverCount: denom.silverCoinsFound.toString(),
+          };
+        });
+      } else if (HuntMigration.isLegacyHunt(hunt)) {
+        // Convert legacy hunt for editing
+        data[hunt.denomination] = {
+          silverCount: hunt.silverCoinsFound.toString(),
+        };
+      }
+
+      setDenominationData(data);
     }
   }, [hunt]);
 
   const handleSave = async () => {
     if (!hunt) return;
 
-    const newSilverCount = parseInt(silverCount);
-    if (isNaN(newSilverCount) || newSilverCount < 0) {
-      Alert.alert('Error', 'Please enter a valid number of silver coins');
-      return;
+    // Validate all silver counts
+    for (const [denomination, data] of Object.entries(denominationData)) {
+      const silverCount = parseInt(data.silverCount);
+      if (isNaN(silverCount) || silverCount < 0) {
+        Alert.alert('Error', `Please enter a valid number of silver coins for ${denomination}`);
+        return;
+      }
     }
 
     setIsLoading(true);
     try {
-      await HuntStorage.updateSilverCount(hunt.id, newSilverCount, processingNotes);
-      
+      // Update each denomination
+      const updatedDenominations: DenominationEntry[] = hunt.denominations.map(denom => {
+        const data = denominationData[denom.denomination];
+        if (data) {
+          return {
+            ...denom,
+            silverCoinsFound: parseInt(data.silverCount),
+            isProcessed: true,
+          };
+        }
+        return denom;
+      });
+
       const updatedHunt: Hunt = {
         ...hunt,
-        silverCoinsFound: newSilverCount,
-        isProcessed: true,
-        processingNotes,
+        denominations: updatedDenominations,
+        isProcessed: HuntHelpers.isFullyProcessed({ denominations: updatedDenominations } as Hunt),
         lastUpdated: new Date().toISOString(),
       };
+
+      // Save to storage
+      await HuntStorage.updateHunt(updatedHunt);
 
       onSave(updatedHunt);
       Alert.alert('Success', 'Hunt updated successfully!');
@@ -72,8 +103,13 @@ export const HuntEditModal: React.FC<HuntEditModalProps> = ({
 
   const handleCancel = () => {
     if (hunt) {
-      setSilverCount(hunt.silverCoinsFound.toString());
-      setProcessingNotes(hunt.processingNotes || '');
+      const data: {[key: string]: {silverCount: string}} = {};
+      hunt.denominations.forEach((denom) => {
+        data[denom.denomination] = {
+          silverCount: denom.silverCoinsFound.toString(),
+        };
+      });
+      setDenominationData(data);
     }
     onClose();
   };
@@ -84,12 +120,13 @@ export const HuntEditModal: React.FC<HuntEditModalProps> = ({
     <Modal
       visible={visible}
       animationType="slide"
-      presentationStyle="pageSheet"
+      presentationStyle="fullScreen"
       onRequestClose={handleCancel}
     >
       <KeyboardAvoidingView
         style={styles.container}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
       >
         <View style={styles.header}>
           <TouchableOpacity onPress={handleCancel} style={styles.cancelButton}>
@@ -107,7 +144,16 @@ export const HuntEditModal: React.FC<HuntEditModalProps> = ({
           </TouchableOpacity>
         </View>
 
-        <ScrollView style={styles.content}>
+        <ScrollView
+          style={styles.content}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={true}
+          keyboardShouldPersistTaps="handled"
+          bounces={true}
+          alwaysBounceVertical={true}
+          nestedScrollEnabled={true}
+          scrollEventThrottle={16}
+        >
           <View style={styles.huntInfo}>
             <Text style={styles.huntInfoTitle}>Hunt Details</Text>
             <Text style={styles.huntInfoText}>
@@ -120,43 +166,49 @@ export const HuntEditModal: React.FC<HuntEditModalProps> = ({
               📅 {new Date(hunt.date).toLocaleDateString()}
             </Text>
             <Text style={styles.huntInfoText}>
-              🪙 {hunt.denomination} • {hunt.numberOfRolls} rolls • {hunt.totalCoinsChecked} coins
+              🪙 {HuntMigration.getSafeDenominationSummary(hunt)}
             </Text>
             <Text style={styles.huntInfoText}>
-              Status: {hunt.isProcessed ? '✅ Processed' : '⏳ Unprocessed'}
+              Total: {HuntMigration.getSafeTotalCoinsChecked(hunt)} coins • {HuntMigration.getSafeTotalSilverFound(hunt)} silver
+            </Text>
+            <Text style={styles.huntInfoText}>
+              Status: {HuntMigration.getSafeIsProcessed(hunt) ? '✅ Processed' : '⏳ Unprocessed'}
             </Text>
           </View>
 
-          <View style={styles.editSection}>
-            <Text style={styles.sectionTitle}>Silver Coins Found</Text>
-            <Text style={styles.helpText}>
-              Update this after you've had time to properly examine your coins
-            </Text>
-            <TextInput
-              style={styles.input}
-              value={silverCount}
-              onChangeText={setSilverCount}
-              placeholder="Number of silver coins found"
-              keyboardType="numeric"
-              selectTextOnFocus
-            />
-          </View>
+          {(HuntMigration.isNewHunt(hunt) ? hunt.denominations : HuntMigration.isLegacyHunt(hunt) ? [HuntMigration.migrateLegacyHunt(hunt).denominations[0]] : []).map((denom, index) => (
+            <View key={denom.denomination} style={styles.editSection}>
+              <Text style={styles.sectionTitle}>
+                {denom.denomination} ({denom.numberOfRolls} rolls, {denom.totalCoinsChecked} coins)
+              </Text>
+              <Text style={styles.helpText}>
+                Update silver coins found and add notes for this denomination
+              </Text>
 
-          <View style={styles.editSection}>
-            <Text style={styles.sectionTitle}>Processing Notes</Text>
-            <Text style={styles.helpText}>
-              Add notes about what you found, coin conditions, dates, etc.
-            </Text>
-            <TextInput
-              style={[styles.input, styles.notesInput]}
-              value={processingNotes}
-              onChangeText={setProcessingNotes}
-              placeholder="e.g., Found 2 Mercury dimes (1943, 1944), 1 Walking Liberty half (1945)"
-              multiline
-              numberOfLines={4}
-              textAlignVertical="top"
-            />
-          </View>
+              <View style={styles.denominationInputs}>
+                <View style={styles.inputGroup}>
+                  <Text style={styles.inputLabel}>Silver Coins Found</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={denominationData[denom.denomination]?.silverCount || ''}
+                    onChangeText={(value) => setDenominationData(prev => ({
+                      ...prev,
+                      [denom.denomination]: {
+                        silverCount: value,
+                      }
+                    }))}
+                    placeholder="Number of silver coins"
+                    keyboardType="numeric"
+                    selectTextOnFocus
+                  />
+                </View>
+              </View>
+
+
+            </View>
+          ))}
+
+
 
           {hunt.lastUpdated && (
             <View style={styles.lastUpdatedSection}>
@@ -214,7 +266,11 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
+  },
+  scrollContent: {
     padding: 16,
+    paddingBottom: 300,
+    flexGrow: 1,
   },
   huntInfo: {
     backgroundColor: '#fff',
@@ -267,6 +323,18 @@ const styles = StyleSheet.create({
   },
   notesInput: {
     height: 100,
+  },
+  denominationInputs: {
+    marginBottom: 12,
+  },
+  inputGroup: {
+    marginBottom: 8,
+  },
+  inputLabel: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#333',
+    marginBottom: 4,
   },
   lastUpdatedSection: {
     alignItems: 'center',

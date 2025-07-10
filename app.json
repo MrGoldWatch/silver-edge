@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "SilverEdgeTest",
-    "slug": "SilverEdgeTest",
+    "name": "Silver Edge",
+    "slug": "silver-edge",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -17,9 +17,14 @@
       "bundleIdentifier": "com.silveredge.app",
       "buildNumber": "1.0.0",
       "infoPlist": {
-        "UIBackgroundModes": ["background-processing"],
+        "UIBackgroundModes": [
+          "background-processing"
+        ],
         "NSLocationWhenInUseUsageDescription": "This app uses location to find nearby bank branches for your coin hunting records.",
         "NSLocationAlwaysAndWhenInUseUsageDescription": "This app uses location to find nearby bank branches for your coin hunting records."
+      },
+      "config": {
+        "usesNonExemptEncryption": false
       }
     },
     "android": {
@@ -35,6 +40,11 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "c9cc3815-ab9a-44bf-96ec-278e476e139f"
+      }
     }
   }
 }

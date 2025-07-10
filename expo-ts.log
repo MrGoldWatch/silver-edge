@@ -1,0 +1,15 @@
+
+> silveredgetest@1.0.0 web
+> expo start --web
+
+Starting project at /Users/hossein.khosravani/Desktop/HK/silverEdge/SilverEdgeTS
+Starting Metro Bundler
+Waiting on http://localhost:8081
+Logs for your project will appear below.
+Recrawled this watch 5 times, most recently because:
+MustScanSubDirs UserDroppedTo resolve, please review the information on
+https://facebook.github.io/watchman/docs/troubleshooting.html#recrawl
+To clear this warning, run:
+`watchman watch-del '/Users/hossein.khosravani/Desktop/HK/silverEdge' ; watchman watch-project '/Users/hossein.khosravani/Desktop/HK/silverEdge'`
+
+Web Bundled 98ms index.js (1 module)
