@@ -1,42 +1,15 @@
-import express from 'express';
+import express, { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
 import { z } from 'zod';
-import { PrismaClient } from '@prisma/client';
 import { authenticateToken, AuthenticatedRequest } from '../middleware/auth';
+import { registerSchema, loginSchema } from '../services/validation';
+import { JWTService } from '../services/jwt';
+import prisma from '../services/database';
 
 const router = express.Router();
-const prisma = new PrismaClient();
-
-// Validation schemas
-const registerSchema = z.object({
-  email: z.string().email('Invalid email format'),
-  password: z.string().min(6, 'Password must be at least 6 characters'),
-  firstName: z.string().optional(),
-  lastName: z.string().optional(),
-});
-
-const loginSchema = z.object({
-  email: z.string().email('Invalid email format'),
-  password: z.string().min(1, 'Password is required'),
-});
-
-// Helper function to generate JWT token
-const generateToken = (userId: string, email: string): string => {
-  const jwtSecret = process.env.JWT_SECRET;
-  if (!jwtSecret) {
-    throw new Error('JWT_SECRET environment variable is not set');
-  }
-  
-  return jwt.sign(
-    { userId, email },
-    jwtSecret,
-    { expiresIn: '7d' } // Token expires in 7 days
-  );
-};
 
 // POST /api/auth/register
-router.post('/register', async (req, res) => {
+router.post('/register', async (req: Request, res: Response): Promise<void | Response> => {
   try {
     // Validate request body
     const validatedData = registerSchema.parse(req.body);
@@ -76,7 +49,7 @@ router.post('/register', async (req, res) => {
     });
 
     // Generate JWT token
-    const token = generateToken(user.id, user.email);
+    const token = JWTService.generateToken(user.id, user.email);
 
     res.status(201).json({
       message: 'User registered successfully',
@@ -100,7 +73,7 @@ router.post('/register', async (req, res) => {
 });
 
 // POST /api/auth/login
-router.post('/login', async (req, res) => {
+router.post('/login', async (req: Request, res: Response): Promise<void | Response> => {
   try {
     // Validate request body
     const validatedData = loginSchema.parse(req.body);
@@ -134,7 +107,7 @@ router.post('/login', async (req, res) => {
     });
 
     // Generate JWT token
-    const token = generateToken(user.id, user.email);
+    const token = JWTService.generateToken(user.id, user.email);
 
     res.json({
       message: 'Login successful',
@@ -163,7 +136,7 @@ router.post('/login', async (req, res) => {
 });
 
 // GET /api/auth/me - Get current user info
-router.get('/me', authenticateToken, async (req: AuthenticatedRequest, res) => {
+router.get('/me', authenticateToken, async (req: AuthenticatedRequest, res: Response): Promise<void | Response> => {
   try {
     const user = await prisma.user.findUnique({
       where: { id: req.user!.id },
@@ -193,10 +166,10 @@ router.get('/me', authenticateToken, async (req: AuthenticatedRequest, res) => {
 });
 
 // POST /api/auth/refresh - Refresh JWT token
-router.post('/refresh', authenticateToken, async (req: AuthenticatedRequest, res) => {
+router.post('/refresh', authenticateToken, async (req: AuthenticatedRequest, res: Response): Promise<void | Response> => {
   try {
     // Generate new token
-    const token = generateToken(req.user!.id, req.user!.email);
+    const token = JWTService.generateToken(req.user!.id, req.user!.email);
 
     res.json({
       message: 'Token refreshed successfully',

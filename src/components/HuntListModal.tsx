@@ -8,15 +8,17 @@ import {
   ScrollView,
   KeyboardAvoidingView,
   Platform,
+  Alert,
 } from 'react-native';
-import { Hunt, HuntHelpers } from '../types/Hunt';
-import { HuntMigration } from '../utils/HuntMigration';
+import { Hunt } from '../types/api';
+import apiService from '../services/api';
 
 interface HuntListModalProps {
   visible: boolean;
   hunts: Hunt[];
   onClose: () => void;
   onEditHunt: (hunt: Hunt) => void;
+  onHuntDeleted: () => void;
 }
 
 export const HuntListModal: React.FC<HuntListModalProps> = ({
@@ -24,7 +26,32 @@ export const HuntListModal: React.FC<HuntListModalProps> = ({
   hunts,
   onClose,
   onEditHunt,
+  onHuntDeleted,
 }) => {
+
+  const handleDeleteHunt = async (hunt: Hunt) => {
+    Alert.alert(
+      'Delete Hunt',
+      `Are you sure you want to delete the hunt at ${hunt.bankName}?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await apiService.deleteHunt(hunt.id);
+              onHuntDeleted();
+              Alert.alert('Success', 'Hunt deleted successfully');
+            } catch (error) {
+              console.error('Error deleting hunt:', error);
+              Alert.alert('Error', 'Failed to delete hunt');
+            }
+          },
+        },
+      ]
+    );
+  };
   return (
     <Modal
       visible={visible}
@@ -80,34 +107,28 @@ export const HuntListModal: React.FC<HuntListModalProps> = ({
                     )}
                   </View>
                   <View style={styles.huntActions}>
-                    <Text style={[
-                      styles.statusBadge,
-                      HuntMigration.getSafeIsProcessed(hunt) ? styles.processedBadge : styles.unprocessedBadge
-                    ]}>
-                      {HuntMigration.getSafeIsProcessed(hunt) ? '✅' : '⏳'}
-                    </Text>
                     <TouchableOpacity
                       style={styles.editButton}
-                      onPress={() => {
-                        console.log('Edit button pressed for hunt:', hunt.id);
-                        onEditHunt(hunt);
-                      }}
+                      onPress={() => onEditHunt(hunt)}
                     >
                       <Text style={styles.editButtonText}>✏️</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.deleteButton}
+                      onPress={() => handleDeleteHunt(hunt)}
+                    >
+                      <Text style={styles.deleteButtonText}>🗑️</Text>
                     </TouchableOpacity>
                   </View>
                 </View>
                 
                 <View style={styles.huntDetails}>
                   <Text style={styles.huntDetailText}>
-                    {HuntMigration.getSafeDenominationSummary(hunt)}
+                    {hunt.totalRolls} rolls • {hunt.totalCoinsChecked.toLocaleString()} coins • {hunt.totalSilverFound} silver
                   </Text>
-                  <Text style={styles.huntDetailText}>
-                    {HuntMigration.getSafeTotalCoinsChecked(hunt)} coins • {HuntMigration.getSafeTotalSilverFound(hunt)} silver
-                  </Text>
-                  {HuntMigration.isNewHunt(hunt) && hunt.denominations.map((denom, index) => (
+                  {hunt.denominations.map((denom, index) => (
                     <Text key={index} style={styles.denominationDetail}>
-                      {denom.denomination}: {denom.totalCoinsChecked} coins, {denom.silverCoinsFound} silver
+                      {denom.denomination}: {denom.numberOfRolls} rolls ({denom.totalCoinsChecked} coins), {denom.silverCoinsFound} silver
                       {denom.processingNotes && ` - ${denom.processingNotes}`}
                     </Text>
                   ))}
@@ -120,11 +141,11 @@ export const HuntListModal: React.FC<HuntListModalProps> = ({
                 
                 <View style={styles.huntFooter}>
                   <Text style={styles.huntDate}>
-                    {new Date(hunt.date).toLocaleDateString()}
+                    {new Date(hunt.huntDate).toLocaleDateString()}
                   </Text>
-                  {hunt.lastUpdated && hunt.lastUpdated !== hunt.date && (
+                  {hunt.updatedAt && hunt.updatedAt !== hunt.createdAt && (
                     <Text style={styles.updatedIndicator}>
-                      Updated: {new Date(hunt.lastUpdated).toLocaleDateString()}
+                      Updated: {new Date(hunt.updatedAt).toLocaleDateString()}
                     </Text>
                   )}
                 </View>
@@ -262,6 +283,19 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   editButtonText: {
+    fontSize: 16,
+  },
+  deleteButton: {
+    backgroundColor: '#FFE5E5',
+    borderRadius: 6,
+    padding: 6,
+    marginLeft: 8,
+    minWidth: 32,
+    minHeight: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  deleteButtonText: {
     fontSize: 16,
   },
   huntDetails: {

@@ -1,8 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
-import jwt from 'jsonwebtoken';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { JWTService } from '../services/jwt';
+import prisma from '../services/database';
 
 export interface AuthenticatedRequest extends Request {
   user?: {
@@ -15,10 +13,10 @@ export const authenticateToken = async (
   req: AuthenticatedRequest,
   res: Response,
   next: NextFunction
-) => {
+): Promise<void | Response> => {
   try {
     const authHeader = req.headers.authorization;
-    const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
+    const token = JWTService.extractTokenFromHeader(authHeader);
 
     if (!token) {
       return res.status(401).json({
@@ -27,16 +25,8 @@ export const authenticateToken = async (
       });
     }
 
-    const jwtSecret = process.env.JWT_SECRET;
-    if (!jwtSecret) {
-      console.error('JWT_SECRET environment variable is not set');
-      return res.status(500).json({
-        error: 'Server configuration error'
-      });
-    }
-
     // Verify the token
-    const decoded = jwt.verify(token, jwtSecret) as { userId: string; email: string };
+    const decoded = JWTService.verifyToken(token);
 
     // Check if user still exists and is active
     const user = await prisma.user.findUnique({
@@ -66,17 +56,10 @@ export const authenticateToken = async (
 
     next();
   } catch (error) {
-    if (error instanceof jwt.JsonWebTokenError) {
-      return res.status(401).json({
-        error: 'Invalid token',
-        message: 'The provided token is invalid or expired'
-      });
-    }
-
     console.error('Authentication middleware error:', error);
-    return res.status(500).json({
-      error: 'Authentication failed',
-      message: 'An error occurred during authentication'
+    return res.status(401).json({
+      error: 'Invalid token',
+      message: error instanceof Error ? error.message : 'Token verification failed'
     });
   }
 };
@@ -85,22 +68,17 @@ export const optionalAuth = async (
   req: AuthenticatedRequest,
   res: Response,
   next: NextFunction
-) => {
+): Promise<void | Response> => {
   try {
     const authHeader = req.headers.authorization;
-    const token = authHeader && authHeader.split(' ')[1];
+    const token = JWTService.extractTokenFromHeader(authHeader);
 
     if (!token) {
       // No token provided, continue without authentication
       return next();
     }
 
-    const jwtSecret = process.env.JWT_SECRET;
-    if (!jwtSecret) {
-      return next();
-    }
-
-    const decoded = jwt.verify(token, jwtSecret) as { userId: string; email: string };
+    const decoded = JWTService.verifyToken(token);
     const user = await prisma.user.findUnique({
       where: {
         id: decoded.userId,

@@ -69,9 +69,5 @@ model HuntDenomination {
   @@map("hunt_denominations")
 }
 
-// Enum for denomination types (optional, for type safety)
-enum DenominationType {
-  DIMES
-  QUARTERS
-  HALVES
-}
+// Note: SQLite doesn't support enums, so we use string validation in the application layer
+// Valid denomination types: 'Dimes', 'Quarters', 'Halves'

@@ -10,23 +10,25 @@ import {
   ScrollView,
   KeyboardAvoidingView,
   Platform,
+  ActivityIndicator,
 } from 'react-native';
-import { Hunt, HuntHelpers, DenominationEntry } from '../types/Hunt';
-import { HuntMigration } from '../utils/HuntMigration';
-import { HuntStorage } from '../services/HuntStorage';
+import { Hunt, UpdateHuntRequest } from '../types/api';
+import apiService from '../services/api';
 
 interface HuntEditModalProps {
   visible: boolean;
   hunt: Hunt | null;
   onClose: () => void;
-  onSave: (updatedHunt: Hunt) => void;
+  onHuntSaved: () => void;
+  onHuntDeleted: () => void;
 }
 
 export const HuntEditModal: React.FC<HuntEditModalProps> = ({
   visible,
   hunt,
   onClose,
-  onSave,
+  onHuntSaved,
+  onHuntDeleted,
 }) => {
   const [denominationData, setDenominationData] = useState<{[key: string]: {silverCount: string}}>({});
   const [isLoading, setIsLoading] = useState(false);
@@ -67,8 +69,8 @@ export const HuntEditModal: React.FC<HuntEditModalProps> = ({
 
     setIsLoading(true);
     try {
-      // Update each denomination
-      const updatedDenominations: DenominationEntry[] = hunt.denominations.map(denom => {
+      // Update each denomination with new silver counts
+      const updatedDenominations = hunt.denominations.map(denom => {
         const data = denominationData[denom.denomination];
         if (data) {
           return {
@@ -80,25 +82,61 @@ export const HuntEditModal: React.FC<HuntEditModalProps> = ({
         return denom;
       });
 
-      const updatedHunt: Hunt = {
-        ...hunt,
-        denominations: updatedDenominations,
-        isProcessed: HuntHelpers.isFullyProcessed({ denominations: updatedDenominations } as Hunt),
-        lastUpdated: new Date().toISOString(),
+      const updateRequest: UpdateHuntRequest = {
+        bankName: hunt.bankName,
+        branchName: hunt.branchName,
+        branchAddress: hunt.branchAddress,
+        huntDate: hunt.huntDate.split('T')[0], // Format as YYYY-MM-DD
+        denominations: updatedDenominations.map(denom => ({
+          denomination: denom.denomination,
+          numberOfRolls: denom.numberOfRolls,
+          coinsPerRoll: denom.coinsPerRoll,
+          silverCoinsFound: denom.silverCoinsFound,
+          isProcessed: denom.isProcessed,
+          processingNotes: denom.processingNotes,
+        })),
       };
 
-      // Save to storage
-      await HuntStorage.updateHunt(updatedHunt);
-
-      onSave(updatedHunt);
+      await apiService.updateHunt(hunt.id, updateRequest);
+      onHuntSaved(); // Notify parent to reload hunts
       Alert.alert('Success', 'Hunt updated successfully!');
       onClose();
     } catch (error) {
       console.error('Error updating hunt:', error);
-      Alert.alert('Error', 'Failed to update hunt');
+      Alert.alert('Error', 'Failed to update hunt. Please try again.');
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleDelete = async () => {
+    if (!hunt) return;
+
+    Alert.alert(
+      'Delete Hunt',
+      `Are you sure you want to delete the hunt at ${hunt.bankName}?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            setIsLoading(true);
+            try {
+              await apiService.deleteHunt(hunt.id);
+              onHuntDeleted();
+              Alert.alert('Success', 'Hunt deleted successfully');
+              onClose();
+            } catch (error) {
+              console.error('Error deleting hunt:', error);
+              Alert.alert('Error', 'Failed to delete hunt');
+            } finally {
+              setIsLoading(false);
+            }
+          },
+        },
+      ]
+    );
   };
 
   const handleCancel = () => {
@@ -133,15 +171,24 @@ export const HuntEditModal: React.FC<HuntEditModalProps> = ({
             <Text style={styles.cancelButtonText}>Cancel</Text>
           </TouchableOpacity>
           <Text style={styles.title}>Edit Hunt</Text>
-          <TouchableOpacity
-            onPress={handleSave}
-            style={[styles.saveButton, isLoading && styles.saveButtonDisabled]}
-            disabled={isLoading}
-          >
-            <Text style={styles.saveButtonText}>
-              {isLoading ? 'Saving...' : 'Save'}
-            </Text>
-          </TouchableOpacity>
+          <View style={styles.headerActions}>
+            <TouchableOpacity
+              onPress={handleDelete}
+              style={[styles.deleteButton, isLoading && styles.deleteButtonDisabled]}
+              disabled={isLoading}
+            >
+              <Text style={styles.deleteButtonText}>🗑️</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={handleSave}
+              style={[styles.saveButton, isLoading && styles.saveButtonDisabled]}
+              disabled={isLoading}
+            >
+              <Text style={styles.saveButtonText}>
+                {isLoading ? 'Saving...' : 'Save'}
+              </Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
         <ScrollView
@@ -263,6 +310,23 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: '500',
+  },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  deleteButton: {
+    backgroundColor: '#FFE5E5',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  deleteButtonDisabled: {
+    backgroundColor: '#F0F0F0',
+  },
+  deleteButtonText: {
+    fontSize: 16,
   },
   content: {
     flex: 1,

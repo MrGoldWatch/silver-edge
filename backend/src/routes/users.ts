@@ -1,20 +1,13 @@
-import express from 'express';
+import express, { Request, Response } from 'express';
 import { z } from 'zod';
-import { PrismaClient } from '@prisma/client';
 import { authenticateToken, AuthenticatedRequest } from '../middleware/auth';
+import { updateProfileSchema, statsQuerySchema } from '../services/validation';
+import prisma from '../services/database';
 
 const router = express.Router();
-const prisma = new PrismaClient();
-
-// Validation schemas
-const updateProfileSchema = z.object({
-  firstName: z.string().optional(),
-  lastName: z.string().optional(),
-  email: z.string().email().optional(),
-});
 
 // GET /api/users/profile - Get user profile
-router.get('/profile', authenticateToken, async (req: AuthenticatedRequest, res) => {
+router.get('/profile', authenticateToken, async (req: AuthenticatedRequest, res: Response): Promise<void | Response> => {
   try {
     const user = await prisma.user.findUnique({
       where: { id: req.user!.id },
@@ -44,7 +37,7 @@ router.get('/profile', authenticateToken, async (req: AuthenticatedRequest, res)
 });
 
 // PUT /api/users/profile - Update user profile
-router.put('/profile', authenticateToken, async (req: AuthenticatedRequest, res) => {
+router.put('/profile', authenticateToken, async (req: AuthenticatedRequest, res: Response): Promise<void | Response> => {
   try {
     const validatedData = updateProfileSchema.parse(req.body);
 
@@ -97,7 +90,7 @@ router.put('/profile', authenticateToken, async (req: AuthenticatedRequest, res)
 });
 
 // GET /api/users/stats - Get user statistics
-router.get('/stats', authenticateToken, async (req: AuthenticatedRequest, res) => {
+router.get('/stats', authenticateToken, async (req: AuthenticatedRequest, res: Response): Promise<void | Response> => {
   try {
     const { timeframe = 'all' } = req.query;
     
@@ -190,7 +183,7 @@ router.get('/stats', authenticateToken, async (req: AuthenticatedRequest, res) =
 });
 
 // DELETE /api/users/account - Delete user account
-router.delete('/account', authenticateToken, async (req: AuthenticatedRequest, res) => {
+router.delete('/account', authenticateToken, async (req: AuthenticatedRequest, res: Response): Promise<void | Response> => {
   try {
     // Delete user (cascades to hunts and denominations)
     await prisma.user.delete({

@@ -13,15 +13,17 @@ import {
   TouchableWithoutFeedback,
   Keyboard,
   Dimensions,
+  ActivityIndicator,
 } from 'react-native';
-import { Hunt, DENOMINATION_DEFAULTS, Denomination, DenominationEntry, HuntHelpers } from '../types/Hunt';
-import { HuntStorage } from '../services/HuntStorage';
+import { Hunt as LegacyHunt, DENOMINATION_DEFAULTS, Denomination, DenominationEntry } from '../types/Hunt';
+import { CreateHuntRequest, HuntDenomination } from '../types/api';
+import apiService from '../services/api';
 import { BankPicker, BankSelection, BankPickerRef } from './BankPicker';
 
 interface HuntFormModalProps {
   visible: boolean;
   onClose: () => void;
-  onSave: (hunt: Hunt) => void;
+  onHuntSaved: () => void;
 }
 
 interface DenominationFormEntry {
@@ -33,7 +35,7 @@ interface DenominationFormEntry {
 export const HuntFormModal: React.FC<HuntFormModalProps> = ({
   visible,
   onClose,
-  onSave,
+  onHuntSaved,
 }) => {
   const [bankName, setBankName] = useState<string>('');
   const [selectedBranch, setSelectedBranch] = useState<BankSelection | null>(null);
@@ -111,35 +113,36 @@ export const HuntFormModal: React.FC<HuntFormModalProps> = ({
       return;
     }
 
-    // Create denomination entries for the hunt
-    const denominations: DenominationEntry[] = validEntries.map(entry =>
-      HuntHelpers.createDenominationEntry(
-        entry.denomination,
-        parseInt(entry.numberOfRolls),
-        parseInt(entry.silverFound) || 0
-      )
-    );
+    // Create denomination entries for the API
+    const denominations: Omit<HuntDenomination, 'id' | 'createdAt' | 'totalCoinsChecked'>[] = validEntries.map(entry => ({
+      denomination: entry.denomination as 'Dimes' | 'Quarters' | 'Halves',
+      numberOfRolls: parseInt(entry.numberOfRolls),
+      coinsPerRoll: DENOMINATION_DEFAULTS[entry.denomination].coinsPerRoll,
+      silverCoinsFound: parseInt(entry.silverFound) || 0,
+      isProcessed: false,
+      processingNotes: undefined,
+    }));
 
-    const hunt: Hunt = {
-      id: Date.now().toString(),
+    const huntRequest: CreateHuntRequest = {
       bankName: selectedBranch?.bankName || bankName,
       branchName: selectedBranch?.branchName,
       branchAddress: selectedBranch?.branchAddress,
-      branchId: selectedBranch?.branchId,
-      date: huntDate.toISOString(),
+      latitude: selectedBranch?.latitude,
+      longitude: selectedBranch?.longitude,
+      huntDate: huntDate.toISOString().split('T')[0], // Format as YYYY-MM-DD
       denominations,
-      isProcessed: HuntHelpers.isFullyProcessed({ denominations } as Hunt),
     };
 
     setIsLoading(true);
     try {
-      await HuntStorage.saveHunt(hunt);
-      onSave(hunt);
+      await apiService.createHunt(huntRequest);
+      onHuntSaved(); // Notify parent to reload hunts
       Alert.alert('Success', 'Hunt saved successfully!');
       resetForm();
+      onClose();
     } catch (error) {
       console.error('Error saving hunt:', error);
-      Alert.alert('Error', 'Failed to save hunt');
+      Alert.alert('Error', 'Failed to save hunt. Please try again.');
     } finally {
       setIsLoading(false);
     }

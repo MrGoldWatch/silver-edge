@@ -1,36 +1,13 @@
-import express from 'express';
+import express, { Request, Response } from 'express';
 import { z } from 'zod';
-import { PrismaClient } from '@prisma/client';
 import { authenticateToken, AuthenticatedRequest } from '../middleware/auth';
+import { createHuntSchema, updateHuntSchema, paginationSchema } from '../services/validation';
+import prisma from '../services/database';
 
 const router = express.Router();
-const prisma = new PrismaClient();
-
-// Validation schemas
-const denominationSchema = z.object({
-  denomination: z.enum(['Dimes', 'Quarters', 'Halves']),
-  numberOfRolls: z.number().int().min(0),
-  coinsPerRoll: z.number().int().min(1),
-  silverCoinsFound: z.number().int().min(0).default(0),
-  isProcessed: z.boolean().default(false),
-  processingNotes: z.string().optional(),
-});
-
-const createHuntSchema = z.object({
-  bankName: z.string().min(1, 'Bank name is required'),
-  branchName: z.string().optional(),
-  branchAddress: z.string().optional(),
-  latitude: z.number().optional(),
-  longitude: z.number().optional(),
-  huntDate: z.string().refine((date) => !isNaN(Date.parse(date)), 'Invalid date format'),
-  denominations: z.array(denominationSchema).min(1, 'At least one denomination is required'),
-  processingNotes: z.string().optional(),
-});
-
-const updateHuntSchema = createHuntSchema.partial();
 
 // GET /api/hunts - Get all hunts for authenticated user
-router.get('/', authenticateToken, async (req: AuthenticatedRequest, res) => {
+router.get('/', authenticateToken, async (req: AuthenticatedRequest, res: Response): Promise<void | Response> => {
   try {
     const { page = '1', limit = '50', sortBy = 'huntDate', sortOrder = 'desc' } = req.query;
     
@@ -76,7 +53,7 @@ router.get('/', authenticateToken, async (req: AuthenticatedRequest, res) => {
 });
 
 // GET /api/hunts/:id - Get specific hunt
-router.get('/:id', authenticateToken, async (req: AuthenticatedRequest, res) => {
+router.get('/:id', authenticateToken, async (req: AuthenticatedRequest, res: Response): Promise<void | Response> => {
   try {
     const { id } = req.params;
 
@@ -106,7 +83,7 @@ router.get('/:id', authenticateToken, async (req: AuthenticatedRequest, res) => 
 });
 
 // POST /api/hunts - Create new hunt
-router.post('/', authenticateToken, async (req: AuthenticatedRequest, res) => {
+router.post('/', authenticateToken, async (req: AuthenticatedRequest, res: Response): Promise<void | Response> => {
   try {
     const validatedData = createHuntSchema.parse(req.body);
     const { denominations, ...huntData } = validatedData;
@@ -151,6 +128,129 @@ router.post('/', authenticateToken, async (req: AuthenticatedRequest, res) => {
     console.error('Create hunt error:', error);
     res.status(500).json({
       error: 'Failed to create hunt'
+    });
+  }
+});
+
+// PUT /api/hunts/:id - Update hunt
+router.put('/:id', authenticateToken, async (req: AuthenticatedRequest, res: Response): Promise<void | Response> => {
+  try {
+    const { id } = req.params;
+    const validatedData = updateHuntSchema.parse(req.body);
+
+    // Check if hunt exists and belongs to user
+    const existingHunt = await prisma.hunt.findFirst({
+      where: {
+        id,
+        userId: req.user!.id
+      },
+      include: {
+        denominations: true
+      }
+    });
+
+    if (!existingHunt) {
+      return res.status(404).json({
+        error: 'Hunt not found'
+      });
+    }
+
+    const { denominations, ...huntData } = validatedData;
+
+    // If denominations are being updated, recalculate totals
+    let updateData: any = { ...huntData };
+
+    if (huntData.huntDate) {
+      updateData.huntDate = new Date(huntData.huntDate);
+    }
+
+    if (denominations) {
+      // Calculate new totals
+      const totalRolls = denominations.reduce((sum, d) => sum + d.numberOfRolls, 0);
+      const totalCoinsChecked = denominations.reduce((sum, d) => sum + (d.numberOfRolls * d.coinsPerRoll), 0);
+      const totalSilverFound = denominations.reduce((sum, d) => sum + d.silverCoinsFound, 0);
+
+      updateData = {
+        ...updateData,
+        totalRolls,
+        totalCoinsChecked,
+        totalSilverFound,
+      };
+
+      // Delete existing denominations and create new ones
+      await prisma.huntDenomination.deleteMany({
+        where: { huntId: id }
+      });
+    }
+
+    const updatedHunt = await prisma.hunt.update({
+      where: { id },
+      data: {
+        ...updateData,
+        ...(denominations && {
+          denominations: {
+            create: denominations.map(d => ({
+              ...d,
+              totalCoinsChecked: d.numberOfRolls * d.coinsPerRoll
+            }))
+          }
+        })
+      },
+      include: {
+        denominations: true
+      }
+    });
+
+    res.json({
+      message: 'Hunt updated successfully',
+      hunt: updatedHunt
+    });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({
+        error: 'Validation failed',
+        details: error.errors
+      });
+    }
+
+    console.error('Update hunt error:', error);
+    res.status(500).json({
+      error: 'Failed to update hunt'
+    });
+  }
+});
+
+// DELETE /api/hunts/:id - Delete hunt
+router.delete('/:id', authenticateToken, async (req: AuthenticatedRequest, res: Response): Promise<void | Response> => {
+  try {
+    const { id } = req.params;
+
+    // Check if hunt exists and belongs to user
+    const existingHunt = await prisma.hunt.findFirst({
+      where: {
+        id,
+        userId: req.user!.id
+      }
+    });
+
+    if (!existingHunt) {
+      return res.status(404).json({
+        error: 'Hunt not found'
+      });
+    }
+
+    // Delete hunt (cascades to denominations)
+    await prisma.hunt.delete({
+      where: { id }
+    });
+
+    res.json({
+      message: 'Hunt deleted successfully'
+    });
+  } catch (error) {
+    console.error('Delete hunt error:', error);
+    res.status(500).json({
+      error: 'Failed to delete hunt'
     });
   }
 });
