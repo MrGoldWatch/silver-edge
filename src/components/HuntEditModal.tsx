@@ -33,7 +33,7 @@ export const HuntEditModal: React.FC<HuntEditModalProps> = ({
   const { showToast } = useToast();
   const [denominationData, setDenominationData] = useState<{[key: string]: {silverCount: string}}>({});
   const [isLoading, setIsLoading] = useState(false);
-  const [deleteConfirmation, setDeleteConfirmation] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   useEffect(() => {
     if (hunt) {
@@ -105,29 +105,30 @@ export const HuntEditModal: React.FC<HuntEditModalProps> = ({
     }
   };
 
-  const handleDelete = async () => {
+  const handleDelete = () => {
+    if (!hunt) return;
+    setShowDeleteModal(true);
+  };
+
+  const confirmDelete = async () => {
     if (!hunt) return;
 
-    if (!deleteConfirmation) {
-      setDeleteConfirmation(true);
-      showToast('Tap delete again to confirm', 'error');
-      setTimeout(() => setDeleteConfirmation(false), 3000);
-      return;
-    }
-
     setIsLoading(true);
+    setShowDeleteModal(false);
     try {
       await HuntStorage.deleteHunt(hunt.id);
       onHuntDeleted();
-      showToast('Hunt deleted successfully', 'success');
       onClose();
     } catch (error) {
       console.error('Error deleting hunt:', error);
       showToast('Failed to delete hunt', 'error');
     } finally {
       setIsLoading(false);
-      setDeleteConfirmation(false);
     }
+  };
+
+  const cancelDelete = () => {
+    setShowDeleteModal(false);
   };
 
   const handleCancel = () => {
@@ -168,9 +169,7 @@ export const HuntEditModal: React.FC<HuntEditModalProps> = ({
               style={[styles.deleteButton, isLoading && styles.deleteButtonDisabled]}
               disabled={isLoading}
             >
-              <Text style={styles.deleteButtonText}>
-                {deleteConfirmation ? 'Confirm Delete' : 'Delete'}
-              </Text>
+              <Text style={styles.deleteButtonText}>Delete</Text>
             </TouchableOpacity>
             <TouchableOpacity
               onPress={handleSave}
@@ -261,6 +260,37 @@ export const HuntEditModal: React.FC<HuntEditModalProps> = ({
 
 
       </KeyboardAvoidingView>
+
+      {/* Delete Confirmation Modal */}
+      <Modal
+        visible={showDeleteModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={cancelDelete}
+      >
+        <View style={styles.deleteModalOverlay}>
+          <View style={styles.deleteModalContent}>
+            <Text style={styles.deleteModalTitle}>Delete Hunt</Text>
+            <Text style={styles.deleteModalMessage}>
+              Are you sure you want to delete the hunt at {hunt?.bankName}?
+            </Text>
+            <View style={styles.deleteModalButtons}>
+              <TouchableOpacity
+                style={styles.deleteModalCancelButton}
+                onPress={cancelDelete}
+              >
+                <Text style={styles.deleteModalCancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.deleteModalConfirmButton}
+                onPress={confirmDelete}
+              >
+                <Text style={styles.deleteModalConfirmText}>Delete</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </Modal>
   );
 };
@@ -405,6 +435,61 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#666',
     fontStyle: 'italic',
+  },
+  deleteModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  deleteModalContent: {
+    backgroundColor: 'white',
+    borderRadius: 12,
+    padding: 24,
+    margin: 20,
+    minWidth: 280,
+  },
+  deleteModalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  deleteModalMessage: {
+    fontSize: 16,
+    color: '#666',
+    marginBottom: 24,
+    textAlign: 'center',
+    lineHeight: 22,
+  },
+  deleteModalButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  deleteModalCancelButton: {
+    flex: 1,
+    padding: 12,
+    borderRadius: 8,
+    backgroundColor: '#f0f0f0',
+    alignItems: 'center',
+  },
+  deleteModalCancelText: {
+    fontSize: 16,
+    color: '#333',
+    fontWeight: '500',
+  },
+  deleteModalConfirmButton: {
+    flex: 1,
+    padding: 12,
+    borderRadius: 8,
+    backgroundColor: '#ff4444',
+    alignItems: 'center',
+  },
+  deleteModalConfirmText: {
+    fontSize: 16,
+    color: 'white',
+    fontWeight: '500',
   },
 
 });

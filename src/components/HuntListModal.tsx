@@ -30,26 +30,32 @@ export const HuntListModal: React.FC<HuntListModalProps> = ({
   onHuntDeleted,
 }) => {
   const { showToast } = useToast();
-  const [deleteConfirmation, setDeleteConfirmation] = useState<string | null>(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [huntToDelete, setHuntToDelete] = useState<Hunt | null>(null);
 
-  const handleDeleteHunt = async (hunt: Hunt) => {
-    if (deleteConfirmation !== hunt.id) {
-      setDeleteConfirmation(hunt.id);
-      showToast('Tap delete again to confirm', 'error');
-      setTimeout(() => setDeleteConfirmation(null), 3000);
-      return;
-    }
+  const handleDeleteHunt = (hunt: Hunt) => {
+    setHuntToDelete(hunt);
+    setShowDeleteModal(true);
+  };
 
+  const confirmDelete = async () => {
+    if (!huntToDelete) return;
+
+    setShowDeleteModal(false);
     try {
-      await HuntStorage.deleteHunt(hunt.id);
+      await HuntStorage.deleteHunt(huntToDelete.id);
       onHuntDeleted();
-      showToast('Hunt deleted successfully', 'success');
-      setDeleteConfirmation(null);
     } catch (error) {
       console.error('Error deleting hunt:', error);
       showToast('Failed to delete hunt', 'error');
-      setDeleteConfirmation(null);
+    } finally {
+      setHuntToDelete(null);
     }
+  };
+
+  const cancelDelete = () => {
+    setShowDeleteModal(false);
+    setHuntToDelete(null);
   };
   return (
     <Modal
@@ -122,15 +128,10 @@ export const HuntListModal: React.FC<HuntListModalProps> = ({
                       <Text style={styles.editButtonText}>⚙</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
-                      style={[
-                        styles.deleteButton,
-                        deleteConfirmation === hunt.id && styles.deleteButtonConfirm
-                      ]}
+                      style={styles.deleteButton}
                       onPress={() => handleDeleteHunt(hunt)}
                     >
-                      <Text style={styles.deleteButtonText}>
-                        {deleteConfirmation === hunt.id ? '✓' : '×'}
-                      </Text>
+                      <Text style={styles.deleteButtonText}>×</Text>
                     </TouchableOpacity>
                   </View>
                 </View>
@@ -172,6 +173,37 @@ export const HuntListModal: React.FC<HuntListModalProps> = ({
 
 
       </KeyboardAvoidingView>
+
+      {/* Delete Confirmation Modal */}
+      <Modal
+        visible={showDeleteModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={cancelDelete}
+      >
+        <View style={styles.deleteModalOverlay}>
+          <View style={styles.deleteModalContent}>
+            <Text style={styles.deleteModalTitle}>Delete Hunt</Text>
+            <Text style={styles.deleteModalMessage}>
+              Are you sure you want to delete the hunt at {huntToDelete?.bankName}?
+            </Text>
+            <View style={styles.deleteModalButtons}>
+              <TouchableOpacity
+                style={styles.deleteModalCancelButton}
+                onPress={cancelDelete}
+              >
+                <Text style={styles.deleteModalCancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.deleteModalConfirmButton}
+                onPress={confirmDelete}
+              >
+                <Text style={styles.deleteModalConfirmText}>Delete</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </Modal>
   );
 };
@@ -313,12 +345,64 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginLeft: 8,
   },
-  deleteButtonConfirm: {
-    backgroundColor: '#FF3333',
-  },
   deleteButtonText: {
     fontSize: 16,
     color: 'white',
+  },
+  deleteModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  deleteModalContent: {
+    backgroundColor: 'white',
+    borderRadius: 12,
+    padding: 24,
+    margin: 20,
+    minWidth: 280,
+  },
+  deleteModalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  deleteModalMessage: {
+    fontSize: 16,
+    color: '#666',
+    marginBottom: 24,
+    textAlign: 'center',
+    lineHeight: 22,
+  },
+  deleteModalButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  deleteModalCancelButton: {
+    flex: 1,
+    padding: 12,
+    borderRadius: 8,
+    backgroundColor: '#f0f0f0',
+    alignItems: 'center',
+  },
+  deleteModalCancelText: {
+    fontSize: 16,
+    color: '#333',
+    fontWeight: '500',
+  },
+  deleteModalConfirmButton: {
+    flex: 1,
+    padding: 12,
+    borderRadius: 8,
+    backgroundColor: '#ff4444',
+    alignItems: 'center',
+  },
+  deleteModalConfirmText: {
+    fontSize: 16,
+    color: 'white',
+    fontWeight: '500',
   },
   huntDetails: {
     marginBottom: 8,
