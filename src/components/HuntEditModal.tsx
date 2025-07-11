@@ -15,6 +15,7 @@ import {
 import { Hunt, HuntHelpers, DenominationEntry } from '../types/Hunt';
 import { HuntMigration } from '../utils/HuntMigration';
 import { HuntStorage } from '../services/HuntStorage';
+import { useToast } from '../contexts/ToastContext';
 
 interface HuntEditModalProps {
   visible: boolean;
@@ -31,8 +32,10 @@ export const HuntEditModal: React.FC<HuntEditModalProps> = ({
   onSave,
   onHuntDeleted,
 }) => {
+  const { showToast } = useToast();
   const [denominationData, setDenominationData] = useState<{[key: string]: {silverCount: string}}>({});
   const [isLoading, setIsLoading] = useState(false);
+  const [deleteConfirmation, setDeleteConfirmation] = useState(false);
   const [toastMessage, setToastMessage] = useState<string>('');
   const [toastType, setToastType] = useState<'success' | 'error'>('success');
   const [toastVisible, setToastVisible] = useState(false);
@@ -91,7 +94,7 @@ export const HuntEditModal: React.FC<HuntEditModalProps> = ({
     for (const [denomination, data] of Object.entries(denominationData)) {
       const silverCount = parseInt(data.silverCount);
       if (isNaN(silverCount) || silverCount < 0) {
-        Alert.alert('Error', `Please enter a valid number of silver coins for ${denomination}`);
+        showToast(`Please enter a valid number of silver coins for ${denomination}`, 'error');
         return;
       }
     }
@@ -122,11 +125,11 @@ export const HuntEditModal: React.FC<HuntEditModalProps> = ({
       await HuntStorage.updateHunt(updatedHunt);
 
       onSave(updatedHunt);
-      Alert.alert('Success', 'Hunt updated successfully!');
+      showToast('Hunt updated successfully!', 'success');
       onClose();
     } catch (error) {
       console.error('Error updating hunt:', error);
-      Alert.alert('Error', 'Failed to update hunt');
+      showToast('Failed to update hunt', 'error');
     } finally {
       setIsLoading(false);
     }
@@ -135,31 +138,26 @@ export const HuntEditModal: React.FC<HuntEditModalProps> = ({
   const handleDelete = async () => {
     if (!hunt) return;
 
-    Alert.alert(
-      'Delete Hunt',
-      `Are you sure you want to delete the hunt at ${hunt.bankName}?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            setIsLoading(true);
-            try {
-              await HuntStorage.deleteHunt(hunt.id);
-              onHuntDeleted();
-              showToast('Hunt deleted successfully', 'success');
-              onClose();
-            } catch (error) {
-              console.error('Error deleting hunt:', error);
-              showToast('Failed to delete hunt', 'error');
-            } finally {
-              setIsLoading(false);
-            }
-          },
-        },
-      ]
-    );
+    if (!deleteConfirmation) {
+      setDeleteConfirmation(true);
+      showToast('Tap delete again to confirm', 'error');
+      setTimeout(() => setDeleteConfirmation(false), 3000);
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      await HuntStorage.deleteHunt(hunt.id);
+      onHuntDeleted();
+      showToast('Hunt deleted successfully', 'success');
+      onClose();
+    } catch (error) {
+      console.error('Error deleting hunt:', error);
+      showToast('Failed to delete hunt', 'error');
+    } finally {
+      setIsLoading(false);
+      setDeleteConfirmation(false);
+    }
   };
 
   const handleCancel = () => {
@@ -200,7 +198,9 @@ export const HuntEditModal: React.FC<HuntEditModalProps> = ({
               style={[styles.deleteButton, isLoading && styles.deleteButtonDisabled]}
               disabled={isLoading}
             >
-              <Text style={styles.deleteButtonText}>Delete</Text>
+              <Text style={styles.deleteButtonText}>
+                {deleteConfirmation ? 'Confirm Delete' : 'Delete'}
+              </Text>
             </TouchableOpacity>
             <TouchableOpacity
               onPress={handleSave}

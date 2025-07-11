@@ -13,11 +13,11 @@ import {
   TouchableWithoutFeedback,
   Keyboard,
   Dimensions,
-  Animated,
 } from 'react-native';
 import { Hunt, DENOMINATION_DEFAULTS, Denomination, DenominationEntry, HuntHelpers } from '../types/Hunt';
 import { HuntStorage } from '../services/HuntStorage';
 import { BankPicker, BankSelection, BankPickerRef } from './BankPicker';
+import { useToast } from '../contexts/ToastContext';
 
 interface HuntFormModalProps {
   visible: boolean;
@@ -36,6 +36,7 @@ export const HuntFormModal: React.FC<HuntFormModalProps> = ({
   onClose,
   onSave,
 }) => {
+  const { showToast } = useToast();
   const [bankName, setBankName] = useState<string>('');
   const [selectedBranch, setSelectedBranch] = useState<BankSelection | null>(null);
   const [huntDate, setHuntDate] = useState<Date>(new Date());
@@ -46,34 +47,6 @@ export const HuntFormModal: React.FC<HuntFormModalProps> = ({
   const bankPickerRef = useRef<BankPickerRef>(null);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [showSilverBreakdown, setShowSilverBreakdown] = useState(false);
-  const [toastMessage, setToastMessage] = useState<string>('');
-  const [toastType, setToastType] = useState<'success' | 'error'>('success');
-  const [toastVisible, setToastVisible] = useState(false);
-  const [toastAnim] = useState(new Animated.Value(-100));
-
-  const showToast = (message: string, type: 'success' | 'error' = 'success') => {
-    setToastMessage(message);
-    setToastType(type);
-    setToastVisible(true);
-
-    // Slide in
-    Animated.timing(toastAnim, {
-      toValue: 0,
-      duration: 300,
-      useNativeDriver: true,
-    }).start();
-
-    // Auto hide after 3 seconds
-    setTimeout(() => {
-      Animated.timing(toastAnim, {
-        toValue: -100,
-        duration: 300,
-        useNativeDriver: true,
-      }).start(() => {
-        setToastVisible(false);
-      });
-    }, 3000);
-  };
 
   const addDenominationEntry = () => {
     const availableDenominations = Object.keys(DENOMINATION_DEFAULTS) as Denomination[];
@@ -368,22 +341,7 @@ export const HuntFormModal: React.FC<HuntFormModalProps> = ({
             </View>
         </ScrollView>
 
-        {/* Toast Notification */}
-        {toastVisible && (
-          <Animated.View
-            style={[
-              styles.toast,
-              {
-                backgroundColor: toastType === 'success' ? '#4CAF50' : '#F44336',
-                transform: [{ translateY: toastAnim }],
-              },
-            ]}
-          >
-            <Text style={styles.toastText}>
-              {toastType === 'success' ? '✓' : '!'} {toastMessage}
-            </Text>
-          </Animated.View>
-        )}
+
       </View>
     </Modal>
   );
@@ -638,28 +596,5 @@ const styles = StyleSheet.create({
     marginBottom: 2,
     paddingLeft: 8,
   },
-  toast: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    paddingTop: 50,
-    paddingBottom: 16,
-    paddingHorizontal: 16,
-    zIndex: 1000,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
-  },
-  toastText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '500',
-    textAlign: 'center',
-  },
+
 });

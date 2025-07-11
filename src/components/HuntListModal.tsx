@@ -8,11 +8,10 @@ import {
   ScrollView,
   KeyboardAvoidingView,
   Platform,
-  Alert,
-  Animated,
 } from 'react-native';
 import { Hunt, HuntHelpers } from '../types/Hunt';
 import { HuntMigration } from '../utils/HuntMigration';
+import { useToast } from '../contexts/ToastContext';
 import { HuntStorage } from '../services/HuntStorage';
 
 interface HuntListModalProps {
@@ -30,57 +29,27 @@ export const HuntListModal: React.FC<HuntListModalProps> = ({
   onEditHunt,
   onHuntDeleted,
 }) => {
-  const [toastMessage, setToastMessage] = useState<string>('');
-  const [toastType, setToastType] = useState<'success' | 'error'>('success');
-  const [toastVisible, setToastVisible] = useState(false);
-  const [toastAnim] = useState(new Animated.Value(-100));
-
-  const showToast = (message: string, type: 'success' | 'error' = 'success') => {
-    setToastMessage(message);
-    setToastType(type);
-    setToastVisible(true);
-
-    // Slide in
-    Animated.timing(toastAnim, {
-      toValue: 0,
-      duration: 300,
-      useNativeDriver: true,
-    }).start();
-
-    // Auto hide after 3 seconds
-    setTimeout(() => {
-      Animated.timing(toastAnim, {
-        toValue: -100,
-        duration: 300,
-        useNativeDriver: true,
-      }).start(() => {
-        setToastVisible(false);
-      });
-    }, 3000);
-  };
+  const { showToast } = useToast();
+  const [deleteConfirmation, setDeleteConfirmation] = useState<string | null>(null);
 
   const handleDeleteHunt = async (hunt: Hunt) => {
-    Alert.alert(
-      'Delete Hunt',
-      `Are you sure you want to delete the hunt at ${hunt.bankName}?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await HuntStorage.deleteHunt(hunt.id);
-              onHuntDeleted();
-              showToast('Hunt deleted successfully', 'success');
-            } catch (error) {
-              console.error('Error deleting hunt:', error);
-              showToast('Failed to delete hunt', 'error');
-            }
-          },
-        },
-      ]
-    );
+    if (deleteConfirmation !== hunt.id) {
+      setDeleteConfirmation(hunt.id);
+      showToast('Tap delete again to confirm', 'error');
+      setTimeout(() => setDeleteConfirmation(null), 3000);
+      return;
+    }
+
+    try {
+      await HuntStorage.deleteHunt(hunt.id);
+      onHuntDeleted();
+      showToast('Hunt deleted successfully', 'success');
+      setDeleteConfirmation(null);
+    } catch (error) {
+      console.error('Error deleting hunt:', error);
+      showToast('Failed to delete hunt', 'error');
+      setDeleteConfirmation(null);
+    }
   };
   return (
     <Modal
@@ -153,10 +122,15 @@ export const HuntListModal: React.FC<HuntListModalProps> = ({
                       <Text style={styles.editButtonText}>⚙</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
-                      style={styles.deleteButton}
+                      style={[
+                        styles.deleteButton,
+                        deleteConfirmation === hunt.id && styles.deleteButtonConfirm
+                      ]}
                       onPress={() => handleDeleteHunt(hunt)}
                     >
-                      <Text style={styles.deleteButtonText}>×</Text>
+                      <Text style={styles.deleteButtonText}>
+                        {deleteConfirmation === hunt.id ? '✓' : '×'}
+                      </Text>
                     </TouchableOpacity>
                   </View>
                 </View>
@@ -196,22 +170,7 @@ export const HuntListModal: React.FC<HuntListModalProps> = ({
           )}
         </ScrollView>
 
-        {/* Toast Notification */}
-        {toastVisible && (
-          <Animated.View
-            style={[
-              styles.toast,
-              {
-                backgroundColor: toastType === 'success' ? '#4CAF50' : '#F44336',
-                transform: [{ translateY: toastAnim }],
-              },
-            ]}
-          >
-            <Text style={styles.toastText}>
-              {toastType === 'success' ? '✓' : '!'} {toastMessage}
-            </Text>
-          </Animated.View>
-        )}
+
       </KeyboardAvoidingView>
     </Modal>
   );
@@ -354,8 +313,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginLeft: 8,
   },
+  deleteButtonConfirm: {
+    backgroundColor: '#FF3333',
+  },
   deleteButtonText: {
     fontSize: 16,
+    color: 'white',
   },
   huntDetails: {
     marginBottom: 8,
@@ -394,28 +357,5 @@ const styles = StyleSheet.create({
     color: '#007AFF',
     fontStyle: 'italic',
   },
-  toast: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    paddingTop: 50,
-    paddingBottom: 16,
-    paddingHorizontal: 16,
-    zIndex: 1000,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
-  },
-  toastText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '500',
-    textAlign: 'center',
-  },
+
 });

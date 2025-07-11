@@ -22,9 +22,11 @@ import { HuntStorage } from './src/services/HuntStorage';
 import { HuntEditModal } from './src/components/HuntEditModal';
 import { HuntFormModal } from './src/components/HuntFormModal';
 import { HuntListModal } from './src/components/HuntListModal';
+import { ToastProvider, useToast } from './src/contexts/ToastContext';
 
 // Main App Component
 function AppContent() {
+  const { showToast } = useToast();
   const [hunts, setHunts] = useState<Hunt[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [editModalVisible, setEditModalVisible] = useState<boolean>(false);
@@ -44,7 +46,7 @@ function AppContent() {
       setHunts(savedHunts);
     } catch (error) {
       console.error('Error loading hunts:', error);
-      Alert.alert('Error', 'Failed to load hunt history');
+      showToast('Failed to load hunt history', 'error');
     } finally {
       setIsLoading(false);
     }
@@ -54,9 +56,9 @@ function AppContent() {
     setHunts(prevHunts => [newHunt, ...prevHunts]);
     setHuntFormModalVisible(false);
 
-    // Show success alert on main screen after modal closes
+    // Show success toast on main screen after modal closes
     setTimeout(() => {
-      Alert.alert('Success', 'Hunt saved successfully!');
+      showToast('Hunt saved successfully!', 'success');
     }, 100);
   };
 
@@ -533,5 +535,9 @@ const styles = StyleSheet.create({
 
 // Main App
 export default function App() {
-  return <AppContent />;
+  return (
+    <ToastProvider>
+      <AppContent />
+    </ToastProvider>
+  );
 }
