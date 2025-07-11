@@ -45,6 +45,10 @@ export const HuntListModal: React.FC<HuntListModalProps> = ({
     try {
       await HuntStorage.deleteHunt(huntToDelete.id);
       onHuntDeleted();
+      // Show success alert on hunt list page
+      setTimeout(() => {
+        showToast('Hunt deleted successfully!', 'success');
+      }, 100);
     } catch (error) {
       console.error('Error deleting hunt:', error);
       showToast('Failed to delete hunt', 'error');

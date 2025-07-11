@@ -62,13 +62,14 @@ function AppContent() {
     }, 100);
   };
 
-  const handleHuntDeleted = () => {
+  const handleHuntDeletedFromList = () => {
     loadHunts();
+    // No success alert here - it shows on the hunt list page
+  };
 
-    // Show success toast on main screen after modal closes
-    setTimeout(() => {
-      showToast('Hunt deleted successfully!', 'success');
-    }, 100);
+  const handleHuntDeletedFromEdit = () => {
+    loadHunts();
+    // No success alert here - it shows on the edit page
   };
 
   const handleEditHunt = (hunt: Hunt) => {
@@ -211,7 +212,7 @@ function AppContent() {
           hunts={hunts}
           onClose={() => setHuntListModalVisible(false)}
           onEditHunt={handleEditHunt}
-          onHuntDeleted={handleHuntDeleted}
+          onHuntDeleted={handleHuntDeletedFromList}
         />
 
         <HuntEditModal
@@ -222,7 +223,7 @@ function AppContent() {
             setSelectedHuntForEdit(null);
           }}
           onSave={handleSaveEdit}
-          onHuntDeleted={handleHuntDeleted}
+          onHuntDeleted={handleHuntDeletedFromEdit}
         />
       </View>
     </TouchableWithoutFeedback>

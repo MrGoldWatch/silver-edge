@@ -118,7 +118,11 @@ export const HuntEditModal: React.FC<HuntEditModalProps> = ({
     try {
       await HuntStorage.deleteHunt(hunt.id);
       onHuntDeleted();
-      onClose();
+      // Show success alert on edit page before closing
+      showToast('Hunt deleted successfully!', 'success');
+      setTimeout(() => {
+        onClose();
+      }, 1500); // Give time to see the success message
     } catch (error) {
       console.error('Error deleting hunt:', error);
       showToast('Failed to delete hunt', 'error');
