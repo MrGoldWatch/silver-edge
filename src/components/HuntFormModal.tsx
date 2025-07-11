@@ -13,6 +13,7 @@ import {
   TouchableWithoutFeedback,
   Keyboard,
   Dimensions,
+  Animated,
 } from 'react-native';
 import { Hunt, DENOMINATION_DEFAULTS, Denomination, DenominationEntry, HuntHelpers } from '../types/Hunt';
 import { HuntStorage } from '../services/HuntStorage';
@@ -45,6 +46,34 @@ export const HuntFormModal: React.FC<HuntFormModalProps> = ({
   const bankPickerRef = useRef<BankPickerRef>(null);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [showSilverBreakdown, setShowSilverBreakdown] = useState(false);
+  const [toastMessage, setToastMessage] = useState<string>('');
+  const [toastType, setToastType] = useState<'success' | 'error'>('success');
+  const [toastVisible, setToastVisible] = useState(false);
+  const [toastAnim] = useState(new Animated.Value(-100));
+
+  const showToast = (message: string, type: 'success' | 'error' = 'success') => {
+    setToastMessage(message);
+    setToastType(type);
+    setToastVisible(true);
+
+    // Slide in
+    Animated.timing(toastAnim, {
+      toValue: 0,
+      duration: 300,
+      useNativeDriver: true,
+    }).start();
+
+    // Auto hide after 3 seconds
+    setTimeout(() => {
+      Animated.timing(toastAnim, {
+        toValue: -100,
+        duration: 300,
+        useNativeDriver: true,
+      }).start(() => {
+        setToastVisible(false);
+      });
+    }, 3000);
+  };
 
   const addDenominationEntry = () => {
     const availableDenominations = Object.keys(DENOMINATION_DEFAULTS) as Denomination[];
@@ -101,13 +130,13 @@ export const HuntFormModal: React.FC<HuntFormModalProps> = ({
   const saveHunt = async () => {
     // Validate that we have bank name and at least one denomination with rolls
     if (!bankName) {
-      Alert.alert('Error', 'Please enter a bank name');
+      showToast('Please enter a bank name', 'error');
       return;
     }
 
     const validEntries = denominationEntries.filter(entry => entry.numberOfRolls && parseInt(entry.numberOfRolls) > 0);
     if (validEntries.length === 0) {
-      Alert.alert('Error', 'Please enter at least one denomination with number of rolls');
+      showToast('Please enter at least one denomination with number of rolls', 'error');
       return;
     }
 
@@ -134,12 +163,11 @@ export const HuntFormModal: React.FC<HuntFormModalProps> = ({
     setIsLoading(true);
     try {
       await HuntStorage.saveHunt(hunt);
-      onSave(hunt);
-      Alert.alert('Success', 'Hunt saved successfully!');
       resetForm();
+      onSave(hunt);
     } catch (error) {
       console.error('Error saving hunt:', error);
-      Alert.alert('Error', 'Failed to save hunt');
+      showToast('Failed to save hunt', 'error');
     } finally {
       setIsLoading(false);
     }
@@ -220,7 +248,7 @@ export const HuntFormModal: React.FC<HuntFormModalProps> = ({
                         if (!isNaN(date.getTime())) {
                           setHuntDate(date);
                         } else {
-                          Alert.alert('Error', 'Invalid date format. Please use YYYY-MM-DD');
+                          showToast('Invalid date format. Please use YYYY-MM-DD', 'error');
                         }
                       }
                     },
@@ -339,6 +367,23 @@ export const HuntFormModal: React.FC<HuntFormModalProps> = ({
               </View>
             </View>
         </ScrollView>
+
+        {/* Toast Notification */}
+        {toastVisible && (
+          <Animated.View
+            style={[
+              styles.toast,
+              {
+                backgroundColor: toastType === 'success' ? '#4CAF50' : '#F44336',
+                transform: [{ translateY: toastAnim }],
+              },
+            ]}
+          >
+            <Text style={styles.toastText}>
+              {toastType === 'success' ? '✓' : '!'} {toastMessage}
+            </Text>
+          </Animated.View>
+        )}
       </View>
     </Modal>
   );
@@ -592,5 +637,29 @@ const styles = StyleSheet.create({
     color: '#555',
     marginBottom: 2,
     paddingLeft: 8,
+  },
+  toast: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    paddingTop: 50,
+    paddingBottom: 16,
+    paddingHorizontal: 16,
+    zIndex: 1000,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  toastText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '500',
+    textAlign: 'center',
   },
 });

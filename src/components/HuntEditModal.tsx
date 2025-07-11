@@ -10,6 +10,7 @@ import {
   ScrollView,
   KeyboardAvoidingView,
   Platform,
+  Animated,
 } from 'react-native';
 import { Hunt, HuntHelpers, DenominationEntry } from '../types/Hunt';
 import { HuntMigration } from '../utils/HuntMigration';
@@ -20,6 +21,7 @@ interface HuntEditModalProps {
   hunt: Hunt | null;
   onClose: () => void;
   onSave: (updatedHunt: Hunt) => void;
+  onHuntDeleted: () => void;
 }
 
 export const HuntEditModal: React.FC<HuntEditModalProps> = ({
@@ -27,9 +29,38 @@ export const HuntEditModal: React.FC<HuntEditModalProps> = ({
   hunt,
   onClose,
   onSave,
+  onHuntDeleted,
 }) => {
   const [denominationData, setDenominationData] = useState<{[key: string]: {silverCount: string}}>({});
   const [isLoading, setIsLoading] = useState(false);
+  const [toastMessage, setToastMessage] = useState<string>('');
+  const [toastType, setToastType] = useState<'success' | 'error'>('success');
+  const [toastVisible, setToastVisible] = useState(false);
+  const [toastAnim] = useState(new Animated.Value(-100));
+
+  const showToast = (message: string, type: 'success' | 'error' = 'success') => {
+    setToastMessage(message);
+    setToastType(type);
+    setToastVisible(true);
+
+    // Slide in
+    Animated.timing(toastAnim, {
+      toValue: 0,
+      duration: 300,
+      useNativeDriver: true,
+    }).start();
+
+    // Auto hide after 3 seconds
+    setTimeout(() => {
+      Animated.timing(toastAnim, {
+        toValue: -100,
+        duration: 300,
+        useNativeDriver: true,
+      }).start(() => {
+        setToastVisible(false);
+      });
+    }, 3000);
+  };
 
   useEffect(() => {
     if (hunt) {
@@ -101,6 +132,36 @@ export const HuntEditModal: React.FC<HuntEditModalProps> = ({
     }
   };
 
+  const handleDelete = async () => {
+    if (!hunt) return;
+
+    Alert.alert(
+      'Delete Hunt',
+      `Are you sure you want to delete the hunt at ${hunt.bankName}?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            setIsLoading(true);
+            try {
+              await HuntStorage.deleteHunt(hunt.id);
+              onHuntDeleted();
+              showToast('Hunt deleted successfully', 'success');
+              onClose();
+            } catch (error) {
+              console.error('Error deleting hunt:', error);
+              showToast('Failed to delete hunt', 'error');
+            } finally {
+              setIsLoading(false);
+            }
+          },
+        },
+      ]
+    );
+  };
+
   const handleCancel = () => {
     if (hunt) {
       const data: {[key: string]: {silverCount: string}} = {};
@@ -133,15 +194,24 @@ export const HuntEditModal: React.FC<HuntEditModalProps> = ({
             <Text style={styles.cancelButtonText}>Cancel</Text>
           </TouchableOpacity>
           <Text style={styles.title}>Edit Hunt</Text>
-          <TouchableOpacity
-            onPress={handleSave}
-            style={[styles.saveButton, isLoading && styles.saveButtonDisabled]}
-            disabled={isLoading}
-          >
-            <Text style={styles.saveButtonText}>
-              {isLoading ? 'Saving...' : 'Save'}
-            </Text>
-          </TouchableOpacity>
+          <View style={styles.headerActions}>
+            <TouchableOpacity
+              onPress={handleDelete}
+              style={[styles.deleteButton, isLoading && styles.deleteButtonDisabled]}
+              disabled={isLoading}
+            >
+              <Text style={styles.deleteButtonText}>Delete</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={handleSave}
+              style={[styles.saveButton, isLoading && styles.saveButtonDisabled]}
+              disabled={isLoading}
+            >
+              <Text style={styles.saveButtonText}>
+                {isLoading ? 'Saving...' : 'Save'}
+              </Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
         <ScrollView
@@ -218,6 +288,23 @@ export const HuntEditModal: React.FC<HuntEditModalProps> = ({
             </View>
           )}
         </ScrollView>
+
+        {/* Toast Notification */}
+        {toastVisible && (
+          <Animated.View
+            style={[
+              styles.toast,
+              {
+                backgroundColor: toastType === 'success' ? '#4CAF50' : '#F44336',
+                transform: [{ translateY: toastAnim }],
+              },
+            ]}
+          >
+            <Text style={styles.toastText}>
+              {toastType === 'success' ? '✓' : '!'} {toastMessage}
+            </Text>
+          </Animated.View>
+        )}
       </KeyboardAvoidingView>
     </Modal>
   );
@@ -260,6 +347,25 @@ const styles = StyleSheet.create({
     backgroundColor: '#ccc',
   },
   saveButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  deleteButton: {
+    backgroundColor: '#FF6B6B',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+    marginRight: 8,
+  },
+  deleteButtonDisabled: {
+    backgroundColor: '#ccc',
+  },
+  deleteButtonText: {
     color: '#fff',
     fontSize: 16,
     fontWeight: '500',
@@ -344,5 +450,29 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#666',
     fontStyle: 'italic',
+  },
+  toast: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    paddingTop: 50,
+    paddingBottom: 16,
+    paddingHorizontal: 16,
+    zIndex: 1000,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  toastText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '500',
+    textAlign: 'center',
   },
 });

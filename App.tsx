@@ -23,8 +23,8 @@ import { HuntEditModal } from './src/components/HuntEditModal';
 import { HuntFormModal } from './src/components/HuntFormModal';
 import { HuntListModal } from './src/components/HuntListModal';
 
-// Main App
-export default function App() {
+// Main App Component
+function AppContent() {
   const [hunts, setHunts] = useState<Hunt[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [editModalVisible, setEditModalVisible] = useState<boolean>(false);
@@ -53,6 +53,11 @@ export default function App() {
   const handleHuntSaved = (newHunt: Hunt) => {
     setHunts(prevHunts => [newHunt, ...prevHunts]);
     setHuntFormModalVisible(false);
+
+    // Show success alert on main screen after modal closes
+    setTimeout(() => {
+      Alert.alert('Success', 'Hunt saved successfully!');
+    }, 100);
   };
 
   const handleEditHunt = (hunt: Hunt) => {
@@ -195,6 +200,7 @@ export default function App() {
           hunts={hunts}
           onClose={() => setHuntListModalVisible(false)}
           onEditHunt={handleEditHunt}
+          onHuntDeleted={loadHunts}
         />
 
         <HuntEditModal
@@ -205,6 +211,7 @@ export default function App() {
             setSelectedHuntForEdit(null);
           }}
           onSave={handleSaveEdit}
+          onHuntDeleted={loadHunts}
         />
       </View>
     </TouchableWithoutFeedback>
@@ -523,3 +530,8 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
 });
+
+// Main App
+export default function App() {
+  return <AppContent />;
+}
