@@ -8,6 +8,7 @@ import {
   ScrollView,
   KeyboardAvoidingView,
   Platform,
+  Animated,
 } from 'react-native';
 import { Hunt, HuntHelpers } from '../types/Hunt';
 import { HuntMigration } from '../utils/HuntMigration';
@@ -32,6 +33,32 @@ export const HuntListModal: React.FC<HuntListModalProps> = ({
   const { showToast } = useToast();
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [huntToDelete, setHuntToDelete] = useState<Hunt | null>(null);
+  const [localToastVisible, setLocalToastVisible] = useState(false);
+  const [localToastMessage, setLocalToastMessage] = useState('');
+  const [localToastAnim] = useState(new Animated.Value(-100));
+
+  const showLocalToast = (message: string) => {
+    setLocalToastMessage(message);
+    setLocalToastVisible(true);
+
+    // Slide in
+    Animated.timing(localToastAnim, {
+      toValue: 0,
+      duration: 300,
+      useNativeDriver: true,
+    }).start();
+
+    // Auto hide after 3 seconds
+    setTimeout(() => {
+      Animated.timing(localToastAnim, {
+        toValue: -100,
+        duration: 300,
+        useNativeDriver: true,
+      }).start(() => {
+        setLocalToastVisible(false);
+      });
+    }, 3000);
+  };
 
   const handleDeleteHunt = (hunt: Hunt) => {
     setHuntToDelete(hunt);
@@ -46,9 +73,7 @@ export const HuntListModal: React.FC<HuntListModalProps> = ({
       await HuntStorage.deleteHunt(huntToDelete.id);
       onHuntDeleted();
       // Show success alert on hunt list page
-      setTimeout(() => {
-        showToast('Hunt deleted successfully!', 'success');
-      }, 100);
+      showLocalToast('Hunt deleted successfully!');
     } catch (error) {
       console.error('Error deleting hunt:', error);
       showToast('Failed to delete hunt', 'error');
@@ -208,6 +233,20 @@ export const HuntListModal: React.FC<HuntListModalProps> = ({
           </View>
         </View>
       </Modal>
+
+      {/* Local Toast for Hunt List Modal */}
+      {localToastVisible && (
+        <Animated.View
+          style={[
+            styles.localToastContainer,
+            {
+              transform: [{ translateY: localToastAnim }],
+            },
+          ]}
+        >
+          <Text style={styles.localToastText}>{localToastMessage}</Text>
+        </Animated.View>
+      )}
     </Modal>
   );
 };
@@ -444,6 +483,30 @@ const styles = StyleSheet.create({
     fontSize: 10,
     color: '#007AFF',
     fontStyle: 'italic',
+  },
+  localToastContainer: {
+    position: 'absolute',
+    top: 50,
+    left: 20,
+    right: 20,
+    backgroundColor: '#4CAF50',
+    padding: 16,
+    borderRadius: 8,
+    zIndex: 9999,
+    elevation: 999,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+  },
+  localToastText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '500',
+    textAlign: 'center',
   },
 
 });

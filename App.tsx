@@ -64,7 +64,7 @@ function AppContent() {
 
   const handleHuntDeletedFromList = () => {
     loadHunts();
-    // No success alert here - it shows on the hunt list page
+    // Don't close modal or show toast here - let the HuntListModal handle it
   };
 
   const handleHuntDeletedFromEdit = () => {
