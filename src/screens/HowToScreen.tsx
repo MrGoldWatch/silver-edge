@@ -7,6 +7,7 @@ import {
   ScrollView,
   Modal,
   Linking,
+  SafeAreaView,
 } from 'react-native';
 
 interface HowToScreenProps {
@@ -363,7 +364,7 @@ export const HowToScreen: React.FC<HowToScreenProps> = ({
       presentationStyle="fullScreen"
       onRequestClose={onClose}
     >
-      <View style={styles.container}>
+      <SafeAreaView style={styles.container}>
         <View style={styles.header}>
           <TouchableOpacity onPress={onClose} style={styles.closeButton}>
             <Text style={styles.closeButtonText}>Close</Text>
@@ -377,7 +378,7 @@ export const HowToScreen: React.FC<HowToScreenProps> = ({
         <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
           {currentSectionData?.content}
         </ScrollView>
-      </View>
+      </SafeAreaView>
     </Modal>
   );
 };

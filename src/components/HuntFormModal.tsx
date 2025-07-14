@@ -14,6 +14,7 @@ import {
   Keyboard,
   Dimensions,
   ActivityIndicator,
+  SafeAreaView,
 } from 'react-native';
 import { Hunt as LegacyHunt, DENOMINATION_DEFAULTS, Denomination, DenominationEntry, HuntHelpers } from '../types/Hunt';
 import { CreateHuntRequest, HuntDenomination } from '../types/api';
@@ -201,7 +202,7 @@ export const HuntFormModal: React.FC<HuntFormModalProps> = ({
       presentationStyle="fullScreen"
       onRequestClose={handleCancel}
     >
-      <View style={styles.container}>
+      <SafeAreaView style={styles.container}>
         <View style={styles.header}>
           <TouchableOpacity onPress={handleCancel} style={styles.cancelButton}>
             <Text style={styles.cancelButtonText}>Cancel</Text>
@@ -380,7 +381,7 @@ export const HuntFormModal: React.FC<HuntFormModalProps> = ({
               </View>
             </View>
         </ScrollView>
-      </View>
+      </SafeAreaView>
     </Modal>
   );
 };
@@ -397,8 +398,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 20,
-    paddingTop: 60,
-    paddingBottom: 20,
+    paddingVertical: 20,
     backgroundColor: '#fff',
     borderBottomWidth: 1,
     borderBottomColor: '#e0e0e0',

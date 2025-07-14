@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
   Modal,
   Alert,
+  SafeAreaView,
 } from 'react-native';
 import { Hunt } from '../types/api';
 import apiService from '../services/api';
@@ -355,7 +356,7 @@ export const StatisticsScreen: React.FC<StatisticsScreenProps> = ({
       presentationStyle="fullScreen"
       onRequestClose={onClose}
     >
-      <View style={styles.container}>
+      <SafeAreaView style={styles.container}>
         <View style={styles.header}>
           <TouchableOpacity onPress={onClose} style={styles.closeButton}>
             <Text style={styles.closeButtonText}>Close</Text>
@@ -385,7 +386,7 @@ export const StatisticsScreen: React.FC<StatisticsScreenProps> = ({
             initialEndDate={customEndDate}
           />
         )}
-      </View>
+      </SafeAreaView>
     </Modal>
   );
 };
