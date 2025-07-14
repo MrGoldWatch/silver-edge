@@ -320,7 +320,8 @@ const styles = StyleSheet.create({
     color: '#333',
   },
   cancelButton: {
-    padding: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
   },
   cancelButtonText: {
     fontSize: 16,

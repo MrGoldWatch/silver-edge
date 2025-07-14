@@ -406,16 +406,12 @@ const styles = StyleSheet.create({
     borderBottomColor: '#E0E0E0',
   },
   closeButton: {
-    paddingHorizontal: 16,
     paddingVertical: 8,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#E74C3C',
+    paddingHorizontal: 12,
   },
   closeButtonText: {
-    color: '#E74C3C',
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: 16,
+    color: '#007AFF',
   },
   title: {
     fontSize: 20,
