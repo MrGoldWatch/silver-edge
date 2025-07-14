@@ -15,9 +15,10 @@ import {
   Dimensions,
   ActivityIndicator,
 } from 'react-native';
-import { Hunt as LegacyHunt, DENOMINATION_DEFAULTS, Denomination, DenominationEntry } from '../types/Hunt';
+import { Hunt as LegacyHunt, DENOMINATION_DEFAULTS, Denomination, DenominationEntry, HuntHelpers } from '../types/Hunt';
 import { CreateHuntRequest, HuntDenomination } from '../types/api';
 import apiService from '../services/api';
+import { HuntStorage } from '../services/HuntStorage';
 import { BankPicker, BankSelection, BankPickerRef } from './BankPicker';
 
 interface HuntFormModalProps {
@@ -114,14 +115,31 @@ export const HuntFormModal: React.FC<HuntFormModalProps> = ({
     }
 
     // Create denomination entries for the API
-    const denominations: Omit<HuntDenomination, 'id' | 'createdAt' | 'totalCoinsChecked'>[] = validEntries.map(entry => ({
-      denomination: entry.denomination as 'Dimes' | 'Quarters' | 'Halves',
-      numberOfRolls: parseInt(entry.numberOfRolls),
-      coinsPerRoll: DENOMINATION_DEFAULTS[entry.denomination].coinsPerRoll,
-      silverCoinsFound: parseInt(entry.silverFound) || 0,
-      isProcessed: false,
-      processingNotes: undefined,
-    }));
+    const denominations: Omit<HuntDenomination, 'id' | 'createdAt' | 'totalCoinsChecked'>[] = validEntries.map(entry => {
+      const numberOfRolls = parseInt(entry.numberOfRolls);
+      const coinsPerRoll = DENOMINATION_DEFAULTS[entry.denomination];
+      const silverCoinsFound = parseInt(entry.silverFound) || 0;
+
+      // Validate that all numbers are valid
+      if (isNaN(numberOfRolls) || numberOfRolls <= 0) {
+        throw new Error(`Invalid number of rolls for ${entry.denomination}`);
+      }
+      if (isNaN(coinsPerRoll) || coinsPerRoll <= 0) {
+        throw new Error(`Invalid coins per roll for ${entry.denomination}`);
+      }
+      if (isNaN(silverCoinsFound) || silverCoinsFound < 0) {
+        throw new Error(`Invalid silver coins found for ${entry.denomination}`);
+      }
+
+      return {
+        denomination: entry.denomination as 'Dimes' | 'Quarters' | 'Halves',
+        numberOfRolls,
+        coinsPerRoll,
+        silverCoinsFound,
+        isProcessed: false,
+        processingNotes: undefined,
+      };
+    });
 
     const huntRequest: CreateHuntRequest = {
       bankName: selectedBranch?.bankName || bankName,
@@ -135,7 +153,27 @@ export const HuntFormModal: React.FC<HuntFormModalProps> = ({
 
     setIsLoading(true);
     try {
-      await apiService.createHunt(huntRequest);
+      // For v1.0.0, save to local storage
+      // TODO: Add API integration in v2.0.0
+      const localHunt: LegacyHunt = {
+        id: Date.now().toString(),
+        bankName: selectedBranch?.bankName || bankName,
+        branchName: selectedBranch?.branchName,
+        branchAddress: selectedBranch?.branchAddress,
+        date: huntDate.toISOString(),
+        denominations: denominations.map(d => ({
+          denomination: d.denomination,
+          numberOfRolls: d.numberOfRolls,
+          coinsPerRoll: d.coinsPerRoll,
+          totalCoinsChecked: d.numberOfRolls * d.coinsPerRoll,
+          silverCoinsFound: d.silverCoinsFound,
+          isProcessed: d.silverCoinsFound > 0,
+          processingNotes: d.processingNotes || '',
+        })),
+        isProcessed: false,
+      };
+
+      await HuntStorage.saveHunt(localHunt);
       onHuntSaved(); // Notify parent to reload hunts
       Alert.alert('Success', 'Hunt saved successfully!');
       resetForm();

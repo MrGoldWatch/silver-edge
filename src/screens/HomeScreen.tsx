@@ -12,6 +12,7 @@ import {
 import { useAuth } from '../contexts/AuthContext';
 import { Hunt } from '../types/api';
 import apiService from '../services/api';
+import { HuntStorage } from '../services/HuntStorage';
 import { HuntEditModal } from '../components/HuntEditModal';
 import { HuntFormModal } from '../components/HuntFormModal';
 import { HuntListModal } from '../components/HuntListModal';
@@ -48,8 +49,21 @@ export const HomeScreen: React.FC = () => {
 
   const loadHunts = async () => {
     try {
-      const response = await apiService.getHunts();
-      setHunts(response.hunts || []);
+      // For v1.0.0, use local storage only
+      // TODO: Add API integration in v2.0.0
+      const localHunts = await HuntStorage.getAllHunts();
+
+      // Convert local hunts to API format for compatibility
+      const apiFormattedHunts = localHunts.map(hunt => ({
+        ...hunt,
+        huntDate: hunt.date,
+        totalRolls: hunt.denominations.reduce((sum, d) => sum + d.numberOfRolls, 0),
+        totalCoinsChecked: hunt.denominations.reduce((sum, d) => sum + d.totalCoinsChecked, 0),
+        totalSilverFound: hunt.denominations.reduce((sum, d) => sum + d.silverCoinsFound, 0),
+        isProcessed: hunt.isProcessed,
+      }));
+
+      setHunts(apiFormattedHunts);
     } catch (error) {
       console.error('Error loading hunts:', error);
       Alert.alert('Error', 'Failed to load hunt history');

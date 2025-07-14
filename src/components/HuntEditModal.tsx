@@ -14,6 +14,8 @@ import {
 } from 'react-native';
 import { Hunt, UpdateHuntRequest } from '../types/api';
 import apiService from '../services/api';
+import { HuntStorage } from '../services/HuntStorage';
+import { Hunt as LocalHunt } from '../types/Hunt';
 
 interface HuntEditModalProps {
   visible: boolean;
@@ -97,7 +99,27 @@ export const HuntEditModal: React.FC<HuntEditModalProps> = ({
         })),
       };
 
-      await apiService.updateHunt(hunt.id, updateRequest);
+      // For v1.0.0, update local storage
+      // TODO: Add API integration in v2.0.0
+      const localHunt: LocalHunt = {
+        id: hunt.id!,
+        bankName: hunt.bankName,
+        branchName: hunt.branchName,
+        branchAddress: hunt.branchAddress,
+        date: hunt.huntDate,
+        denominations: updatedDenominations.map(denom => ({
+          denomination: denom.denomination,
+          numberOfRolls: denom.numberOfRolls,
+          coinsPerRoll: denom.coinsPerRoll,
+          totalCoinsChecked: denom.numberOfRolls * denom.coinsPerRoll,
+          silverCoinsFound: denom.silverCoinsFound,
+          isProcessed: denom.isProcessed,
+          processingNotes: denom.processingNotes || '',
+        })),
+        isProcessed: updatedDenominations.every(d => d.isProcessed),
+      };
+
+      await HuntStorage.updateHunt(localHunt);
       onHuntSaved(); // Notify parent to reload hunts
       Alert.alert('Success', 'Hunt updated successfully!');
       onClose();
@@ -123,7 +145,9 @@ export const HuntEditModal: React.FC<HuntEditModalProps> = ({
           onPress: async () => {
             setIsLoading(true);
             try {
-              await apiService.deleteHunt(hunt.id);
+              // For v1.0.0, delete from local storage
+              // TODO: Add API integration in v2.0.0
+              await HuntStorage.deleteHunt(hunt.id!);
               onHuntDeleted();
               Alert.alert('Success', 'Hunt deleted successfully');
               onClose();
