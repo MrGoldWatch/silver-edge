@@ -17,9 +17,17 @@ import {
 } from '../types/api';
 
 // API Configuration
-const API_BASE_URL = __DEV__ 
-  ? 'http://localhost:3000/api' 
-  : 'https://your-railway-app.railway.app/api';
+// For iOS Simulator, localhost works. For physical device, use IP address
+const getApiBaseUrl = () => {
+  if (!__DEV__) {
+    return 'https://your-railway-app.railway.app/api';
+  }
+
+  // Try localhost first (works in iOS Simulator)
+  return 'http://localhost:3001/api';
+};
+
+const API_BASE_URL = getApiBaseUrl();
 
 const STORAGE_KEYS = {
   AUTH_TOKEN: 'auth_token',
@@ -32,6 +40,7 @@ class ApiService {
   private authToken: string | null = null;
 
   constructor() {
+    console.log('ApiService: Initializing with base URL:', API_BASE_URL);
     this.client = axios.create({
       baseURL: API_BASE_URL,
       timeout: 10000,
@@ -109,6 +118,13 @@ class ApiService {
   }
 
   private handleApiError(error: AxiosError): ApiError {
+    console.log('ApiService: Handling error:', {
+      message: error.message,
+      code: error.code,
+      response: error.response?.status,
+      baseURL: this.client.defaults.baseURL,
+    });
+
     if (error.response) {
       // Server responded with error status
       const data = error.response.data as any;
@@ -122,7 +138,7 @@ class ApiService {
       // Network error
       return {
         error: 'Network Error',
-        message: 'Unable to connect to server. Please check your internet connection.',
+        message: `Unable to connect to server at ${API_BASE_URL}. Please check your internet connection.`,
         status: 0,
       };
     } else {

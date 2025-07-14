@@ -21,7 +21,16 @@
           "background-processing"
         ],
         "NSLocationWhenInUseUsageDescription": "This app uses location to find nearby bank branches for your coin hunting records.",
-        "NSLocationAlwaysAndWhenInUseUsageDescription": "This app uses location to find nearby bank branches for your coin hunting records."
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "This app uses location to find nearby bank branches for your coin hunting records.",
+        "NSAppTransportSecurity": {
+          "NSAllowsLocalNetworking": true,
+          "NSExceptionDomains": {
+            "localhost": {
+              "NSExceptionAllowsInsecureHTTPLoads": true,
+              "NSExceptionMinimumTLSVersion": "1.0"
+            }
+          }
+        }
       },
       "config": {
         "usesNonExemptEncryption": false

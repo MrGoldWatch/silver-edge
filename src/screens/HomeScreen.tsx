@@ -15,6 +15,8 @@ import apiService from '../services/api';
 import { HuntEditModal } from '../components/HuntEditModal';
 import { HuntFormModal } from '../components/HuntFormModal';
 import { HuntListModal } from '../components/HuntListModal';
+import { StatisticsScreen } from './StatisticsScreen';
+import { HowToScreen } from './HowToScreen';
 
 export const HomeScreen: React.FC = () => {
   const { user, logout } = useAuth();
@@ -25,11 +27,24 @@ export const HomeScreen: React.FC = () => {
   const [selectedHuntForEdit, setSelectedHuntForEdit] = useState<Hunt | null>(null);
   const [huntFormModalVisible, setHuntFormModalVisible] = useState(false);
   const [huntListModalVisible, setHuntListModalVisible] = useState(false);
+  const [statisticsModalVisible, setStatisticsModalVisible] = useState(false);
+  const [howToModalVisible, setHowToModalVisible] = useState(false);
   const [showWeeklyStats, setShowWeeklyStats] = useState(false);
+  const [showWelcomeBanner, setShowWelcomeBanner] = useState(true);
 
   useEffect(() => {
     loadHunts();
   }, []);
+
+  // Auto-dismiss welcome banner after 5 seconds
+  useEffect(() => {
+    if (showWelcomeBanner) {
+      const timer = setTimeout(() => {
+        setShowWelcomeBanner(false);
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [showWelcomeBanner]);
 
   const loadHunts = async () => {
     try {
@@ -66,6 +81,18 @@ export const HomeScreen: React.FC = () => {
 
   const handleViewHunts = () => {
     setHuntListModalVisible(true);
+  };
+
+  const handleViewStatistics = () => {
+    setStatisticsModalVisible(true);
+  };
+
+  const handleViewHowTo = () => {
+    setHowToModalVisible(true);
+  };
+
+  const handleDismissBanner = () => {
+    setShowWelcomeBanner(false);
   };
 
   const handleEditHunt = (hunt: Hunt) => {
@@ -116,75 +143,107 @@ export const HomeScreen: React.FC = () => {
   }
 
   return (
-    <ScrollView 
-      style={styles.container}
-      refreshControl={
-        <RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} />
-      }
-    >
-      {/* Header */}
-      <View style={styles.header}>
-        <View>
-          <Text style={styles.welcomeText}>Welcome back,</Text>
-          <Text style={styles.userName}>{user?.firstName || user?.email || 'Hunter'}</Text>
+    <View style={styles.container}>
+      {/* Welcome Banner - Shows only on app launch */}
+      {showWelcomeBanner && (
+        <View style={styles.welcomeBanner}>
+          <View style={styles.bannerContent}>
+            <View>
+              <Text style={styles.welcomeText}>Welcome back,</Text>
+              <Text style={styles.userName}>{user?.firstName || user?.email || 'Hunter'}</Text>
+            </View>
+            <TouchableOpacity onPress={handleDismissBanner} style={styles.dismissButton}>
+              <Text style={styles.dismissButtonText}>✕</Text>
+            </TouchableOpacity>
+          </View>
         </View>
-        <TouchableOpacity onPress={handleLogout} style={styles.logoutButton}>
-          <Text style={styles.logoutText}>Sign Out</Text>
-        </TouchableOpacity>
-      </View>
+      )}
 
-      {/* Quick Actions */}
-      <View style={styles.actionsContainer}>
-        <TouchableOpacity style={styles.primaryButton} onPress={handleAddHunt}>
-          <Text style={styles.primaryButtonText}>🎯 Add New Hunt</Text>
-        </TouchableOpacity>
+      <ScrollView
+        style={styles.scrollContainer}
+        refreshControl={
+          <RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} />
+        }
+        contentContainerStyle={styles.scrollContent}
+      >
 
-        <TouchableOpacity style={styles.secondaryButton} onPress={handleViewHunts}>
-          <Text style={styles.secondaryButtonText}>📋 View All Hunts</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Statistics */}
-      <View style={styles.statsContainer}>
-        <View style={styles.statsHeader}>
-          <Text style={styles.statsTitle}>Statistics</Text>
-          <TouchableOpacity
-            style={styles.toggleButton}
-            onPress={() => setShowWeeklyStats(!showWeeklyStats)}
-          >
-            <Text style={styles.toggleButtonText}>
-              {showWeeklyStats ? 'All Time' : 'Last 7 Days'}
-            </Text>
+      {/* Start Your First Hunt - Primary action for new users */}
+      {hunts.length === 0 && (
+        <View style={styles.emptyState}>
+          <Text style={styles.emptyStateTitle}>🪙 Start Your First Hunt!</Text>
+          <Text style={styles.emptyStateText}>
+            Track your coin roll hunting adventures and discover silver treasures.
+          </Text>
+          <TouchableOpacity style={styles.primaryButton} onPress={handleAddHunt}>
+            <Text style={styles.primaryButtonText}>🎯 Add Your First Hunt</Text>
           </TouchableOpacity>
         </View>
+      )}
 
-        <View style={styles.statsGrid}>
-          <View style={styles.statCard}>
-            <Text style={styles.statNumber}>{stats.totalHunts}</Text>
-            <Text style={styles.statLabel}>Total Hunts</Text>
+      {/* Quick Actions - Only show when user has hunts */}
+      {hunts.length > 0 && (
+        <View style={styles.actionsContainer}>
+          <TouchableOpacity style={styles.primaryButton} onPress={handleAddHunt}>
+            <Text style={styles.primaryButtonText}>🎯 Add New Hunt</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.secondaryButton} onPress={handleViewHunts}>
+            <Text style={styles.secondaryButtonText}>📋 View All Hunts</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {/* Statistics - Only show when user has hunts */}
+      {hunts.length > 0 && (
+        <View style={styles.statsContainer}>
+          <View style={styles.statsHeader}>
+            <Text style={styles.statsTitle}>Statistics</Text>
+            <View style={styles.statsHeaderButtons}>
+              <TouchableOpacity
+                style={styles.toggleButton}
+                onPress={() => setShowWeeklyStats(!showWeeklyStats)}
+              >
+                <Text style={styles.toggleButtonText}>
+                  {showWeeklyStats ? 'All Time' : 'Last 7 Days'}
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.detailsButton}
+                onPress={handleViewStatistics}
+              >
+                <Text style={styles.detailsButtonText}>📊 Details</Text>
+              </TouchableOpacity>
+            </View>
           </View>
 
-          <View style={styles.statCard}>
-            <Text style={styles.statNumber}>{stats.totalRolls}</Text>
-            <Text style={styles.statLabel}>Rolls Checked</Text>
+          <View style={styles.statsGrid}>
+            <View style={styles.statCard}>
+              <Text style={styles.statNumber}>{stats.totalHunts}</Text>
+              <Text style={styles.statLabel}>Total Hunts</Text>
+            </View>
+
+            <View style={styles.statCard}>
+              <Text style={styles.statNumber}>{stats.totalRolls}</Text>
+              <Text style={styles.statLabel}>Rolls Checked</Text>
+            </View>
+
+            <View style={styles.statCard}>
+              <Text style={styles.statNumber}>{stats.totalCoinsChecked.toLocaleString()}</Text>
+              <Text style={styles.statLabel}>Coins Checked</Text>
+            </View>
+
+            <View style={styles.statCard}>
+              <Text style={styles.statNumber}>{stats.totalSilverFound}</Text>
+              <Text style={styles.statLabel}>Silver Found</Text>
+            </View>
           </View>
 
-          <View style={styles.statCard}>
-            <Text style={styles.statNumber}>{stats.totalCoinsChecked.toLocaleString()}</Text>
-            <Text style={styles.statLabel}>Coins Checked</Text>
-          </View>
-
-          <View style={styles.statCard}>
-            <Text style={styles.statNumber}>{stats.totalSilverFound}</Text>
-            <Text style={styles.statLabel}>Silver Found</Text>
+          <View style={styles.successRateContainer}>
+            <Text style={styles.successRateLabel}>Success Rate</Text>
+            <Text style={styles.successRateValue}>{stats.successRate.toFixed(3)}%</Text>
           </View>
         </View>
-
-        <View style={styles.successRateContainer}>
-          <Text style={styles.successRateLabel}>Success Rate</Text>
-          <Text style={styles.successRateValue}>{stats.successRate.toFixed(3)}%</Text>
-        </View>
-      </View>
+      )}
 
       {/* Recent Hunts */}
       {hunts.length > 0 && (
@@ -210,18 +269,17 @@ export const HomeScreen: React.FC = () => {
         </View>
       )}
 
-      {/* Empty State */}
-      {hunts.length === 0 && (
-        <View style={styles.emptyState}>
-          <Text style={styles.emptyStateTitle}>🪙 Start Your First Hunt!</Text>
-          <Text style={styles.emptyStateText}>
-            Track your coin roll hunting adventures and discover silver treasures.
-          </Text>
-          <TouchableOpacity style={styles.primaryButton} onPress={handleAddHunt}>
-            <Text style={styles.primaryButtonText}>Add Your First Hunt</Text>
-          </TouchableOpacity>
-        </View>
-      )}
+      </ScrollView>
+
+      {/* Footer */}
+      <View style={styles.footer}>
+        <TouchableOpacity style={styles.footerButton} onPress={handleViewHowTo}>
+          <Text style={styles.footerButtonText}>📚 How to Hunt Coins</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.footerButton} onPress={handleLogout}>
+          <Text style={styles.footerButtonText}>Sign Out</Text>
+        </TouchableOpacity>
+      </View>
 
       {/* Modals */}
       <HuntFormModal
@@ -238,6 +296,17 @@ export const HomeScreen: React.FC = () => {
         onHuntDeleted={handleHuntDeleted}
       />
 
+      <StatisticsScreen
+        visible={statisticsModalVisible}
+        onClose={() => setStatisticsModalVisible(false)}
+        hunts={hunts}
+      />
+
+      <HowToScreen
+        visible={howToModalVisible}
+        onClose={() => setHowToModalVisible(false)}
+      />
+
       {selectedHuntForEdit && (
         <HuntEditModal
           visible={editModalVisible}
@@ -250,7 +319,7 @@ export const HomeScreen: React.FC = () => {
           onHuntDeleted={handleHuntDeleted}
         />
       )}
-    </ScrollView>
+    </View>
   );
 };
 
@@ -270,35 +339,41 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#7F8C8D',
   },
-  header: {
+  welcomeBanner: {
+    backgroundColor: '#E3F2FD',
+    borderBottomWidth: 1,
+    borderBottomColor: '#BBDEFB',
+  },
+  bannerContent: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 20,
-    backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E0E0E0',
+    padding: 16,
   },
   welcomeText: {
     fontSize: 16,
-    color: '#7F8C8D',
+    color: '#1976D2',
   },
   userName: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: 'bold',
-    color: '#2C3E50',
+    color: '#0D47A1',
   },
-  logoutButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#E74C3C',
+  dismissButton: {
+    padding: 8,
+    borderRadius: 16,
+    backgroundColor: 'rgba(25, 118, 210, 0.1)',
   },
-  logoutText: {
-    color: '#E74C3C',
-    fontSize: 14,
-    fontWeight: '600',
+  dismissButtonText: {
+    color: '#1976D2',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  scrollContainer: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingBottom: 20,
   },
   actionsContainer: {
     padding: 20,
@@ -350,6 +425,11 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#2C3E50',
   },
+  statsHeaderButtons: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
   toggleButton: {
     paddingHorizontal: 12,
     paddingVertical: 6,
@@ -359,6 +439,17 @@ const styles = StyleSheet.create({
   toggleButtonText: {
     fontSize: 12,
     color: '#7F8C8D',
+    fontWeight: '600',
+  },
+  detailsButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+    backgroundColor: '#3498DB',
+  },
+  detailsButtonText: {
+    fontSize: 12,
+    color: '#FFFFFF',
     fontWeight: '600',
   },
   statsGrid: {
@@ -459,5 +550,28 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 24,
     lineHeight: 24,
+  },
+  footer: {
+    flexDirection: 'row',
+    backgroundColor: '#FFFFFF',
+    borderTopWidth: 1,
+    borderTopColor: '#E0E0E0',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    gap: 12,
+  },
+  footerButton: {
+    flex: 1,
+    backgroundColor: '#F8F9FA',
+    borderRadius: 8,
+    padding: 12,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+  },
+  footerButtonText: {
+    color: '#3498DB',
+    fontSize: 14,
+    fontWeight: '600',
   },
 });
