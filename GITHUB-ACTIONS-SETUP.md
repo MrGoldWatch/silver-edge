@@ -1,0 +1,160 @@
+# GitHub Actions + Railway Auto-Deployment Setup
+
+## Overview
+This setup enables automatic deployment to Railway whenever you push to the `main` or `2.0.0` branch.
+
+## 🚀 What Gets Deployed Automatically
+- **Push to main/2.0.0** → Backend deploys to Railway
+- **Pull Request** → Runs tests only (no deployment)
+- **Database migrations** run automatically after deployment
+
+## 📋 Setup Steps
+
+### Step 1: Get Railway Token
+1. Go to [Railway Dashboard](https://railway.com/dashboard)
+2. Click your profile → **Account Settings**
+3. Go to **Tokens** tab
+4. Click **Create Token**
+5. Name it: `GitHub Actions - Silver Edge`
+6. Copy the token (starts with `railway_`)
+
+### Step 2: Add GitHub Secrets
+1. Go to your GitHub repo: https://github.com/MrGoldWatch/silver-edge
+2. Click **Settings** → **Secrets and variables** → **Actions**
+3. Click **New repository secret**
+4. Add these secrets:
+
+| Secret Name | Value | Description |
+|-------------|-------|-------------|
+| `RAILWAY_TOKEN` | `railway_xxxxx` | Token from Step 1 |
+| `DATABASE_URL` | `postgresql://...` | Your Railway PostgreSQL URL |
+
+### Step 3: Get Database URL
+1. Go to [Railway Dashboard](https://railway.com/dashboard)
+2. Open your Silver Edge project
+3. Click **PostgreSQL** service
+4. Go to **Variables** tab
+5. Copy the `DATABASE_URL` value
+6. Add it as `DATABASE_URL` secret in GitHub
+
+### Step 4: Create Railway Service
+1. In Railway dashboard, click **+ New Service**
+2. Choose **GitHub Repo**
+3. Connect your `silver-edge` repository
+4. Set **Root Directory** to `backend`
+5. Railway will auto-detect Node.js and deploy
+
+### Step 5: Configure Railway Service
+1. In your Railway service settings:
+   - **Name**: `silver-edge-backend`
+   - **Start Command**: `npm start`
+   - **Build Command**: `npm run build`
+   - **Health Check**: `/api/health`
+
+### Step 6: Set Environment Variables
+In Railway service → **Variables** tab, add:
+```
+NODE_ENV=production
+PORT=3000
+DATABASE_URL=${{PostgreSQL.DATABASE_URL}}
+JWT_SECRET=your-super-secret-jwt-key-here
+```
+
+## 🔄 How It Works
+
+### Automatic Deployment Flow:
+1. **Push code** to main/2.0.0 branch
+2. **GitHub Actions** triggers
+3. **Installs** dependencies
+4. **Builds** the backend
+5. **Runs tests**
+6. **Deploys** to Railway
+7. **Runs** database migrations
+8. **Backend is live!**
+
+### Manual Deployment (if needed):
+```bash
+# Deploy manually from local machine
+cd backend
+railway login
+railway link [your-project-id]
+railway up
+```
+
+## 📱 Update Frontend API URL
+
+After deployment, update the frontend to use your Railway URL:
+
+1. **Get your Railway URL**:
+   - Go to Railway dashboard
+   - Click your backend service
+   - Copy the **Public URL** (e.g., `https://silver-edge-backend-production.up.railway.app`)
+
+2. **Update frontend API URL**:
+   ```typescript
+   // In src/services/api.ts, line 23:
+   return 'https://your-railway-url.railway.app/api';
+   ```
+
+3. **Rebuild and resubmit** to TestFlight:
+   ```bash
+   eas build --platform ios --profile preview
+   eas submit --platform ios
+   ```
+
+## 🔍 Monitoring Deployments
+
+### GitHub Actions:
+- Go to **Actions** tab in your GitHub repo
+- See deployment status and logs
+- Green ✅ = successful deployment
+- Red ❌ = deployment failed
+
+### Railway Logs:
+- Go to Railway dashboard
+- Click your service
+- **Deployments** tab shows deployment history
+- **Logs** tab shows runtime logs
+
+## 🚨 Troubleshooting
+
+### Common Issues:
+
+**❌ "Railway token invalid"**
+- Regenerate token in Railway dashboard
+- Update `RAILWAY_TOKEN` secret in GitHub
+
+**❌ "Database connection failed"**
+- Check `DATABASE_URL` secret in GitHub
+- Verify PostgreSQL service is running in Railway
+
+**❌ "Build failed"**
+- Check GitHub Actions logs
+- Usually missing dependencies or TypeScript errors
+
+**❌ "Health check failed"**
+- Ensure `/api/health` endpoint exists
+- Check Railway service logs
+
+## 🎯 Benefits of This Setup
+
+✅ **Automatic deployments** - No manual work  
+✅ **Consistent builds** - Same environment every time  
+✅ **Easy rollbacks** - Deploy previous commits easily  
+✅ **Testing integration** - Tests run before deployment  
+✅ **Zero downtime** - Railway handles deployment gracefully  
+✅ **Environment isolation** - Production vs development  
+
+## 🔄 Workflow Summary
+
+```
+Code Change → Push to GitHub → GitHub Actions → Railway Deployment → Live Backend
+```
+
+Once this is set up, you just need to:
+1. **Write code**
+2. **Push to main**
+3. **Wait 2-3 minutes**
+4. **Backend is updated!**
+
+No more manual deployments! 🎉

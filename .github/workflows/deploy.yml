@@ -1,0 +1,52 @@
+name: Deploy to Railway
+
+on:
+  push:
+    branches: [ main, 2.0.0 ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        cache-dependency-path: backend/package-lock.json
+        
+    - name: Install backend dependencies
+      run: |
+        cd backend
+        npm ci
+        
+    - name: Build backend
+      run: |
+        cd backend
+        npm run build
+        
+    - name: Run tests
+      run: |
+        cd backend
+        npm test
+        
+    - name: Deploy to Railway
+      if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/2.0.0'
+      uses: railway-app/railway-deploy@v1
+      with:
+        railway_token: ${{ secrets.RAILWAY_TOKEN }}
+        service: backend
+        
+    - name: Run database migrations
+      if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/2.0.0'
+      run: |
+        cd backend
+        npx prisma migrate deploy
+      env:
+        DATABASE_URL: ${{ secrets.DATABASE_URL }}

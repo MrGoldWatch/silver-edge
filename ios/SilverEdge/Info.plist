@@ -50,10 +50,7 @@
     <string>This app uses location to find nearby bank branches for your coin hunting records.</string>
     <key>NSLocationWhenInUseUsageDescription</key>
     <string>This app uses location to find nearby bank branches for your coin hunting records.</string>
-    <key>UIBackgroundModes</key>
-    <array>
-      <string>background-processing</string>
-    </array>
+
     <key>UILaunchStoryboardName</key>
     <string>SplashScreen</string>
     <key>UIRequiredDeviceCapabilities</key>
