@@ -1,4 +1,6 @@
-# Silver Edge Backend API
+# Silver Edge Backend
+
+🚀 **Auto-deployment enabled via GitHub Actions** API
 
 Backend API server for the Silver Edge coin roll hunting tracker application.
 
