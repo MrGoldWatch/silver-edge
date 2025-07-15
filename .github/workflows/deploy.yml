@@ -44,19 +44,19 @@ jobs:
       if: github.ref == 'refs/heads/2.0.0'
       run: |
         cd backend
+        echo "Deploying to Railway development environment..."
         railway up --service backend-dev
       env:
         RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-        RAILWAY_PROJECT_ID: ${{ secrets.RAILWAY_PROJECT_ID }}
 
     - name: Deploy to Railway (Production)
       if: github.ref == 'refs/heads/main'
       run: |
         cd backend
+        echo "Deploying to Railway production environment..."
         railway up --service backend-prod
       env:
         RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-        RAILWAY_PROJECT_ID: ${{ secrets.RAILWAY_PROJECT_ID }}
 
     - name: Run database migrations (Development)
       if: github.ref == 'refs/heads/2.0.0'
