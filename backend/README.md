@@ -2,6 +2,9 @@
 
 🚀 **Auto-deployment enabled via GitHub Actions** API
 
+## Railway Project Token Test
+Testing deployment with proper Railway Project Token for CI/CD.
+
 Backend API server for the Silver Edge coin roll hunting tracker application.
 
 ## 🚀 Tech Stack
