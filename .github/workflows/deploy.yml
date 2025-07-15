@@ -45,7 +45,7 @@ jobs:
       run: |
         cd backend
         echo "Deploying to Railway development environment..."
-        railway up --service backend-dev
+        railway up --service backend-dev --environment dev --ci
       env:
         RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
 
@@ -54,7 +54,7 @@ jobs:
       run: |
         cd backend
         echo "Deploying to Railway production environment..."
-        railway up --service backend-prod
+        railway up --service backend-prod --environment production --ci
       env:
         RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
 
