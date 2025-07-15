@@ -37,19 +37,26 @@ jobs:
         cd backend
         npm test
         
+    - name: Install Railway CLI
+      run: npm install -g @railway/cli
+
     - name: Deploy to Railway (Development)
       if: github.ref == 'refs/heads/2.0.0'
-      uses: railway-app/railway-deploy@v1
-      with:
-        railway_token: ${{ secrets.RAILWAY_TOKEN }}
-        service: backend-dev
+      run: |
+        cd backend
+        railway up --service backend-dev
+      env:
+        RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+        RAILWAY_PROJECT_ID: ${{ secrets.RAILWAY_PROJECT_ID }}
 
     - name: Deploy to Railway (Production)
       if: github.ref == 'refs/heads/main'
-      uses: railway-app/railway-deploy@v1
-      with:
-        railway_token: ${{ secrets.RAILWAY_TOKEN }}
-        service: backend-prod
+      run: |
+        cd backend
+        railway up --service backend-prod
+      env:
+        RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+        RAILWAY_PROJECT_ID: ${{ secrets.RAILWAY_PROJECT_ID }}
 
     - name: Run database migrations (Development)
       if: github.ref == 'refs/heads/2.0.0'

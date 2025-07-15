@@ -28,33 +28,47 @@ This setup enables automatic deployment to Railway whenever you push to the `mai
 | Secret Name | Value | Description |
 |-------------|-------|-------------|
 | `RAILWAY_TOKEN` | `railway_xxxxx` | Token from Step 1 |
+| `RAILWAY_PROJECT_ID` | `4b38ca53-...` | Your Railway project ID |
 | `DEV_DATABASE_URL` | `postgresql://...` | Development PostgreSQL URL |
 | `PROD_DATABASE_URL` | `postgresql://...` | Production PostgreSQL URL (for main branch) |
 
-### Step 3: Get Database URL
+### Step 3: Get Railway Project Info
 1. Go to [Railway Dashboard](https://railway.com/dashboard)
 2. Open your Silver Edge project
-3. Click **PostgreSQL** service
-4. Go to **Variables** tab
-5. Copy the `DATABASE_URL` value
-6. Add it as `DATABASE_URL` secret in GitHub
+3. **Get Project ID**: Copy from URL (e.g., `4b38ca53-0032-446a-93bb-1d8eb303d9b`)
+4. Click **PostgreSQL** service
+5. Go to **Variables** tab
+6. Copy the `DATABASE_URL` value
+7. Add both as secrets in GitHub
 
-### Step 4: Create Railway Service
+### Step 4: Create Railway Services
 1. In Railway dashboard, click **+ New Service**
 2. Choose **GitHub Repo**
 3. Connect your `silver-edge` repository
 4. Set **Root Directory** to `backend`
-5. Railway will auto-detect Node.js and deploy
+5. Create two services:
+   - `backend-dev` (for 2.0.0 branch)
+   - `backend-prod` (for main branch)
+6. Railway will auto-detect Node.js and deploy
 
-### Step 5: Configure Railway Service
-1. In your Railway service settings:
-   - **Name**: `silver-edge-backend`
+### Step 5: Configure Railway Services
+1. For each service (`backend-dev` and `backend-prod`):
    - **Start Command**: `npm start`
    - **Build Command**: `npm run build`
    - **Health Check**: `/api/health`
 
 ### Step 6: Set Environment Variables
-In Railway service → **Variables** tab, add:
+In each Railway service → **Variables** tab, add:
+
+**For backend-dev:**
+```
+NODE_ENV=development
+PORT=3000
+DATABASE_URL=${{PostgreSQL.DATABASE_URL}}
+JWT_SECRET=your-dev-jwt-secret-key
+```
+
+**For backend-prod:**
 ```
 NODE_ENV=production
 PORT=3000
@@ -121,6 +135,11 @@ After deployment, update the frontend to use your Railway URL:
 ## 🚨 Troubleshooting
 
 ### Common Issues:
+
+**❌ "Unable to resolve action railway-app/railway-deploy@v1"**
+- This action no longer exists
+- Use Railway CLI instead (already fixed in workflow)
+- Make sure you're using the updated workflow file
 
 **❌ "Railway token invalid"**
 - Regenerate token in Railway dashboard
