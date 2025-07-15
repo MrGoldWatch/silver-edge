@@ -4,7 +4,8 @@
 This setup enables automatic deployment to Railway whenever you push to the `main` or `2.0.0` branch.
 
 ## 🚀 What Gets Deployed Automatically
-- **Push to main/2.0.0** → Backend deploys to Railway
+- **Push to 2.0.0 branch** → Backend deploys to Railway **Development**
+- **Push to main branch** → Backend deploys to Railway **Production**
 - **Pull Request** → Runs tests only (no deployment)
 - **Database migrations** run automatically after deployment
 
@@ -27,7 +28,8 @@ This setup enables automatic deployment to Railway whenever you push to the `mai
 | Secret Name | Value | Description |
 |-------------|-------|-------------|
 | `RAILWAY_TOKEN` | `railway_xxxxx` | Token from Step 1 |
-| `DATABASE_URL` | `postgresql://...` | Your Railway PostgreSQL URL |
+| `DEV_DATABASE_URL` | `postgresql://...` | Development PostgreSQL URL |
+| `PROD_DATABASE_URL` | `postgresql://...` | Production PostgreSQL URL (for main branch) |
 
 ### Step 3: Get Database URL
 1. Go to [Railway Dashboard](https://railway.com/dashboard)
