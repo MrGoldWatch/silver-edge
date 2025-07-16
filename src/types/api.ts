@@ -63,6 +63,7 @@ export interface Hunt {
   bankName: string;
   branchName?: string;
   branchAddress?: string;
+  branchNumber?: string; // For Wells Fargo branch numbers
   latitude?: number;
   longitude?: number;
   huntDate: string; // ISO date string
@@ -80,6 +81,7 @@ export interface CreateHuntRequest {
   bankName: string;
   branchName?: string;
   branchAddress?: string;
+  branchNumber?: string; // For Wells Fargo branch numbers
   latitude?: number;
   longitude?: number;
   huntDate: string;

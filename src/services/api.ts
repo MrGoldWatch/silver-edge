@@ -17,14 +17,15 @@ import {
 } from '../types/api';
 
 // API Configuration
-// For iOS Simulator, localhost works. For physical device, use IP address
+// Use IP address for both iOS simulator and physical devices for consistency
 const getApiBaseUrl = () => {
   if (!__DEV__) {
     return 'https://your-railway-app.railway.app/api';
   }
 
-  // Try localhost first (works in iOS Simulator)
-  return 'http://localhost:3001/api';
+  // For development, use your computer's IP address for all devices
+  // This works for both iOS Simulator and physical devices
+  return 'http://192.168.254.67:3001/api';
 };
 
 const API_BASE_URL = getApiBaseUrl();
@@ -41,6 +42,8 @@ class ApiService {
 
   constructor() {
     console.log('ApiService: Initializing with base URL:', API_BASE_URL);
+    console.log('ApiService: Platform:', Platform.OS);
+    console.log('ApiService: Development mode:', __DEV__);
     this.client = axios.create({
       baseURL: API_BASE_URL,
       timeout: 10000,
@@ -147,6 +150,21 @@ class ApiService {
         error: 'Unknown Error',
         message: error.message,
       };
+    }
+  }
+
+  // Health Check Method
+  async healthCheck(): Promise<any> {
+    try {
+      console.log('ApiService: Testing health check...');
+      // Use absolute URL for health check since it's not under /api
+      const healthUrl = API_BASE_URL.replace('/api', '/health');
+      const response = await axios.get(healthUrl);
+      console.log('ApiService: Health check successful:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('ApiService: Health check failed:', error);
+      throw error;
     }
   }
 

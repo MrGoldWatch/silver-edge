@@ -47,26 +47,50 @@ export const HomeScreen: React.FC = () => {
     }
   }, [showWelcomeBanner]);
 
+  const testApiConnection = async () => {
+    try {
+      console.log('Testing API connection...');
+      const result = await apiService.healthCheck();
+      Alert.alert('API Test Success', `Connected to: ${JSON.stringify(result)}`);
+    } catch (error) {
+      console.error('API test failed:', error);
+      Alert.alert('API Test Failed', `Error: ${error.message || 'Unknown error'}`);
+    }
+  };
+
   const loadHunts = async () => {
     try {
-      // For v1.0.0, use local storage only
-      // TODO: Add API integration in v2.0.0
-      const localHunts = await HuntStorage.getAllHunts();
-
-      // Convert local hunts to API format for compatibility
-      const apiFormattedHunts = localHunts.map(hunt => ({
-        ...hunt,
-        huntDate: hunt.date,
-        totalRolls: hunt.denominations.reduce((sum, d) => sum + d.numberOfRolls, 0),
-        totalCoinsChecked: hunt.denominations.reduce((sum, d) => sum + d.totalCoinsChecked, 0),
-        totalSilverFound: hunt.denominations.reduce((sum, d) => sum + d.silverCoinsFound, 0),
-        isProcessed: hunt.isProcessed,
-      }));
-
-      setHunts(apiFormattedHunts);
+      // v2.0.0: Use API for data synchronization
+      console.log('Loading hunts from API...');
+      const apiResponse = await apiService.getHunts();
+      console.log('API response:', apiResponse);
+      const apiHunts = apiResponse?.data || [];
+      console.log('API hunts loaded:', apiHunts.length);
+      setHunts(apiHunts);
     } catch (error) {
-      console.error('Error loading hunts:', error);
-      Alert.alert('Error', 'Failed to load hunt history');
+      console.error('Error loading hunts from API:', error);
+
+      // Fallback to local storage if API fails
+      try {
+        console.log('Falling back to local storage...');
+        const localHunts = await HuntStorage.getAllHunts();
+
+        // Convert local hunts to API format for compatibility
+        const apiFormattedHunts = localHunts.map(hunt => ({
+          ...hunt,
+          huntDate: hunt.date,
+          totalRolls: hunt.denominations.reduce((sum, d) => sum + d.numberOfRolls, 0),
+          totalCoinsChecked: hunt.denominations.reduce((sum, d) => sum + d.totalCoinsChecked, 0),
+          totalSilverFound: hunt.denominations.reduce((sum, d) => sum + d.silverCoinsFound, 0),
+          isProcessed: hunt.isProcessed,
+        }));
+
+        setHunts(apiFormattedHunts);
+        console.log('Local hunts loaded:', apiFormattedHunts.length);
+      } catch (localError) {
+        console.error('Error loading local hunts:', localError);
+        Alert.alert('Error', 'Failed to load hunt history');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -287,6 +311,9 @@ export const HomeScreen: React.FC = () => {
 
       {/* Footer */}
       <View style={styles.footer}>
+        <TouchableOpacity style={styles.footerButton} onPress={testApiConnection}>
+          <Text style={styles.footerButtonText}>🔧 Test API</Text>
+        </TouchableOpacity>
         <TouchableOpacity style={styles.footerButton} onPress={handleViewHowTo}>
           <Text style={styles.footerButtonText}>📚 How to Hunt Coins</Text>
         </TouchableOpacity>

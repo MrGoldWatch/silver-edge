@@ -101,6 +101,7 @@ export const HuntListModal: React.FC<HuntListModalProps> = ({
                   <View style={styles.huntInfo}>
                     <Text style={styles.huntBank}>
                       🏦 {hunt.branchName || hunt.bankName}
+                      {hunt.branchNumber && ` - Branch #${hunt.branchNumber}`}
                     </Text>
                     {hunt.branchAddress && (
                       <Text style={styles.huntBranchAddress}>

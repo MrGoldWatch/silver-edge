@@ -146,6 +146,7 @@ export const HuntFormModal: React.FC<HuntFormModalProps> = ({
       bankName: selectedBranch?.bankName || bankName,
       branchName: selectedBranch?.branchName,
       branchAddress: selectedBranch?.branchAddress,
+      branchNumber: selectedBranch?.branchNumber,
       latitude: selectedBranch?.latitude,
       longitude: selectedBranch?.longitude,
       huntDate: huntDate.toISOString().split('T')[0], // Format as YYYY-MM-DD
@@ -154,27 +155,11 @@ export const HuntFormModal: React.FC<HuntFormModalProps> = ({
 
     setIsLoading(true);
     try {
-      // For v1.0.0, save to local storage
-      // TODO: Add API integration in v2.0.0
-      const localHunt: LegacyHunt = {
-        id: Date.now().toString(),
-        bankName: selectedBranch?.bankName || bankName,
-        branchName: selectedBranch?.branchName,
-        branchAddress: selectedBranch?.branchAddress,
-        date: huntDate.toISOString(),
-        denominations: denominations.map(d => ({
-          denomination: d.denomination,
-          numberOfRolls: d.numberOfRolls,
-          coinsPerRoll: d.coinsPerRoll,
-          totalCoinsChecked: d.numberOfRolls * d.coinsPerRoll,
-          silverCoinsFound: d.silverCoinsFound,
-          isProcessed: d.silverCoinsFound > 0,
-          processingNotes: d.processingNotes || '',
-        })),
-        isProcessed: false,
-      };
+      // v2.0.0: Save to API for synchronization
+      console.log('Saving hunt to API...');
+      const apiHunt = await apiService.createHunt(huntRequest);
+      console.log('Hunt saved to API:', apiHunt);
 
-      await HuntStorage.saveHunt(localHunt);
       onHuntSaved(); // Notify parent to reload hunts
       Alert.alert('Success', 'Hunt saved successfully!');
       resetForm();
@@ -242,6 +227,7 @@ export const HuntFormModal: React.FC<HuntFormModalProps> = ({
                 <View style={styles.branchInfo}>
                   <Text style={styles.branchInfoText}>
                     📍 {selectedBranch.branchName}
+                    {selectedBranch.branchNumber && ` - Branch #${selectedBranch.branchNumber}`}
                   </Text>
                   <Text style={styles.branchAddressText}>
                     {selectedBranch.branchAddress}

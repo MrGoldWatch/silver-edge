@@ -14,6 +14,7 @@ export interface Hunt {
   branchName?: string;
   branchAddress?: string;
   branchId?: string;
+  branchNumber?: string; // For Wells Fargo branch numbers
   date: string; // ISO date string
   denominations: DenominationEntry[]; // Array of denomination entries
   isProcessed: boolean; // true if all denominations have been examined

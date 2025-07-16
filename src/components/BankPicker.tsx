@@ -22,6 +22,9 @@ export interface BankSelection {
   branchName?: string;
   branchAddress?: string;
   branchId?: string;
+  branchNumber?: string; // For Wells Fargo branch numbers
+  latitude?: number;
+  longitude?: number;
 }
 
 interface BankPickerProps {
@@ -44,7 +47,10 @@ export const BankPicker = forwardRef<BankPickerRef, BankPickerProps>(({ value, o
   const [isLoadingLocation, setIsLoadingLocation] = useState(false);
   const [isLoadingBranches, setIsLoadingBranches] = useState(false);
   const [showBranches, setShowBranches] = useState(false);
+  const [showWellsFargoBranchInput, setShowWellsFargoBranchInput] = useState(false);
+  const [wellsFargoBranchNumber, setWellsFargoBranchNumber] = useState('');
   const inputRef = useRef<TextInput>(null);
+  const branchNumberInputRef = useRef<TextInput>(null);
 
   useEffect(() => {
     getCurrentLocation();
@@ -85,8 +91,16 @@ export const BankPicker = forwardRef<BankPickerRef, BankPickerProps>(({ value, o
   const selectBank = async (bank: string) => {
     onChangeText(bank);
     setShowSuggestions(false);
-    
-    // Load nearby branches for selected bank
+
+    // Special handling for Wells Fargo - show branch number input
+    if (bank === 'Wells Fargo') {
+      setShowWellsFargoBranchInput(true);
+      setShowBranches(false);
+      onDropdownStateChange?.(true);
+      return;
+    }
+
+    // Load nearby branches for other banks
     if (userLocation) {
       setIsLoadingBranches(true);
       try {
@@ -118,6 +132,9 @@ export const BankPicker = forwardRef<BankPickerRef, BankPickerProps>(({ value, o
       branchName: branch.name,
       branchAddress: branch.address,
       branchId: branch.id,
+      branchNumber: branch.branchNumber,
+      latitude: branch.latitude,
+      longitude: branch.longitude,
     };
 
     onChangeText(`${branch.bankName} - ${branch.name}`);
@@ -128,10 +145,49 @@ export const BankPicker = forwardRef<BankPickerRef, BankPickerProps>(({ value, o
     onDropdownStateChange?.(false);
   };
 
+  const handleWellsFargoBranchNumberChange = (branchNumber: string) => {
+    // Only allow 4 digits
+    const cleanNumber = branchNumber.replace(/\D/g, '').slice(0, 4);
+    setWellsFargoBranchNumber(cleanNumber);
+  };
+
+  const selectWellsFargoBranch = () => {
+    if (!BankBranchService.isValidWellsFargoBranchNumber(wellsFargoBranchNumber)) {
+      Alert.alert('Invalid Branch Number', 'Please enter a valid 4-digit Wells Fargo branch number.');
+      return;
+    }
+
+    const branch = BankBranchService.getWellsFargoBranchByNumber(wellsFargoBranchNumber);
+    if (!branch) {
+      Alert.alert('Branch Not Found', 'The entered branch number was not found in our database.');
+      return;
+    }
+
+    const selection: BankSelection = {
+      bankName: 'Wells Fargo',
+      branchName: branch.name,
+      branchAddress: branch.address,
+      branchId: branch.id,
+      branchNumber: wellsFargoBranchNumber,
+      latitude: branch.latitude,
+      longitude: branch.longitude,
+    };
+
+    onChangeText(`Wells Fargo - Branch #${wellsFargoBranchNumber}`);
+    onBranchSelect?.(selection);
+    setShowWellsFargoBranchInput(false);
+    setShowSuggestions(false);
+    inputRef.current?.blur();
+    branchNumberInputRef.current?.blur();
+    onDropdownStateChange?.(false);
+  };
+
   const dismissDropdowns = () => {
     setShowSuggestions(false);
     setShowBranches(false);
+    setShowWellsFargoBranchInput(false);
     inputRef.current?.blur();
+    branchNumberInputRef.current?.blur();
     onDropdownStateChange?.(false);
   };
 
@@ -214,6 +270,43 @@ export const BankPicker = forwardRef<BankPickerRef, BankPickerProps>(({ value, o
               </TouchableOpacity>
             ))}
           </ScrollView>
+        </View>
+      )}
+
+      {/* Wells Fargo branch number input */}
+      {showWellsFargoBranchInput && (
+        <View style={styles.wellsFargoBranchInput}>
+          <Text style={styles.branchInputHeader}>🏦 Enter Wells Fargo Branch Number</Text>
+          <View style={styles.branchInputContainer}>
+            <TextInput
+              ref={branchNumberInputRef}
+              style={styles.branchNumberInput}
+              value={wellsFargoBranchNumber}
+              onChangeText={handleWellsFargoBranchNumberChange}
+              placeholder="Enter 4-digit branch number (e.g., 1001)"
+              keyboardType="numeric"
+              maxLength={4}
+              autoFocus={true}
+            />
+            <TouchableOpacity
+              style={[
+                styles.selectBranchButton,
+                wellsFargoBranchNumber.length === 4 ? styles.selectBranchButtonEnabled : styles.selectBranchButtonDisabled
+              ]}
+              onPress={selectWellsFargoBranch}
+              disabled={wellsFargoBranchNumber.length !== 4}
+            >
+              <Text style={[
+                styles.selectBranchButtonText,
+                wellsFargoBranchNumber.length === 4 ? styles.selectBranchButtonTextEnabled : styles.selectBranchButtonTextDisabled
+              ]}>
+                Select
+              </Text>
+            </TouchableOpacity>
+          </View>
+          <Text style={styles.branchInputHint}>
+            Common branch numbers: {BankBranchService.getAvailableWellsFargoBranchNumbers().slice(0, 5).join(', ')}...
+          </Text>
         </View>
       )}
     </View>
@@ -338,6 +431,75 @@ const styles = StyleSheet.create({
   noBranchesText: {
     fontSize: 14,
     color: '#666',
+    fontStyle: 'italic',
+  },
+  wellsFargoBranchInput: {
+    position: 'absolute',
+    top: 50,
+    left: 0,
+    right: 0,
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#007AFF',
+    borderRadius: 8,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 10,
+    zIndex: 9999,
+  },
+  branchInputHeader: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#007AFF',
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  branchInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  branchNumberInput: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 16,
+    backgroundColor: '#fff',
+    marginRight: 8,
+    textAlign: 'center',
+  },
+  selectBranchButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 8,
+    minWidth: 70,
+    alignItems: 'center',
+  },
+  selectBranchButtonEnabled: {
+    backgroundColor: '#007AFF',
+  },
+  selectBranchButtonDisabled: {
+    backgroundColor: '#ccc',
+  },
+  selectBranchButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  selectBranchButtonTextEnabled: {
+    color: '#fff',
+  },
+  selectBranchButtonTextDisabled: {
+    color: '#999',
+  },
+  branchInputHint: {
+    fontSize: 12,
+    color: '#666',
+    textAlign: 'center',
     fontStyle: 'italic',
   },
 });

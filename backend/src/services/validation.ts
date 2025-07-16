@@ -36,6 +36,7 @@ export const createHuntSchema = z.object({
   bankName: z.string().min(1, 'Bank name is required').max(255, 'Bank name too long'),
   branchName: z.string().max(255, 'Branch name too long').optional(),
   branchAddress: z.string().max(500, 'Branch address too long').optional(),
+  branchNumber: z.string().max(10, 'Branch number too long').optional(),
   latitude: z.number().min(-90).max(90).optional(),
   longitude: z.number().min(-180).max(180).optional(),
   huntDate: dateSchema,

@@ -89,6 +89,7 @@ export const HuntEditModal: React.FC<HuntEditModalProps> = ({
         bankName: hunt.bankName,
         branchName: hunt.branchName,
         branchAddress: hunt.branchAddress,
+        branchNumber: hunt.branchNumber,
         huntDate: hunt.huntDate.split('T')[0], // Format as YYYY-MM-DD
         denominations: updatedDenominations.map(denom => ({
           denomination: denom.denomination,
@@ -100,27 +101,11 @@ export const HuntEditModal: React.FC<HuntEditModalProps> = ({
         })),
       };
 
-      // For v1.0.0, update local storage
-      // TODO: Add API integration in v2.0.0
-      const localHunt: LocalHunt = {
-        id: hunt.id!,
-        bankName: hunt.bankName,
-        branchName: hunt.branchName,
-        branchAddress: hunt.branchAddress,
-        date: hunt.huntDate,
-        denominations: updatedDenominations.map(denom => ({
-          denomination: denom.denomination,
-          numberOfRolls: denom.numberOfRolls,
-          coinsPerRoll: denom.coinsPerRoll,
-          totalCoinsChecked: denom.numberOfRolls * denom.coinsPerRoll,
-          silverCoinsFound: denom.silverCoinsFound,
-          isProcessed: denom.isProcessed,
-          processingNotes: denom.processingNotes || '',
-        })),
-        isProcessed: updatedDenominations.every(d => d.isProcessed),
-      };
+      // v2.0.0: Update via API for synchronization
+      console.log('Updating hunt via API...');
+      const updatedHunt = await apiService.updateHunt(hunt.id!, updateRequest);
+      console.log('Hunt updated via API:', updatedHunt);
 
-      await HuntStorage.updateHunt(localHunt);
       onHuntSaved(); // Notify parent to reload hunts
       Alert.alert('Success', 'Hunt updated successfully!');
       onClose();
@@ -146,9 +131,10 @@ export const HuntEditModal: React.FC<HuntEditModalProps> = ({
           onPress: async () => {
             setIsLoading(true);
             try {
-              // For v1.0.0, delete from local storage
-              // TODO: Add API integration in v2.0.0
-              await HuntStorage.deleteHunt(hunt.id!);
+              // v2.0.0: Delete via API for synchronization
+              console.log('Deleting hunt via API...');
+              await apiService.deleteHunt(hunt.id!);
+              console.log('Hunt deleted via API');
               onHuntDeleted();
               Alert.alert('Success', 'Hunt deleted successfully');
               onClose();
@@ -231,6 +217,7 @@ export const HuntEditModal: React.FC<HuntEditModalProps> = ({
             <Text style={styles.huntInfoTitle}>Hunt Details</Text>
             <Text style={styles.huntInfoText}>
               🏦 {hunt.branchName || hunt.bankName}
+              {hunt.branchNumber && ` - Branch #${hunt.branchNumber}`}
             </Text>
             {hunt.branchAddress && (
               <Text style={styles.huntInfoSubtext}>📍 {hunt.branchAddress}</Text>

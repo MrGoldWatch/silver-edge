@@ -33,6 +33,7 @@ model Hunt {
   bankName       String    @map("bank_name")
   branchName     String?   @map("branch_name")
   branchAddress  String?   @map("branch_address")
+  branchNumber   String?   @map("branch_number")
   latitude       Float?
   longitude      Float?
   huntDate       DateTime  @map("hunt_date") @db.Date
