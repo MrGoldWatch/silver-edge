@@ -44,14 +44,20 @@ app.use(express.urlencoded({ extended: true }));
 // Logging middleware
 app.use(morgan('combined'));
 
-// Health check endpoint
+// Health check endpoints (both /health and /api/health for Railway compatibility)
+const healthResponse = {
+  status: 'OK',
+  timestamp: new Date().toISOString(),
+  service: 'Silver Edge API',
+  version: '2.0.0'
+};
+
 app.get('/health', (req, res) => {
-  res.status(200).json({
-    status: 'OK',
-    timestamp: new Date().toISOString(),
-    service: 'Silver Edge API',
-    version: '2.0.0'
-  });
+  res.status(200).json(healthResponse);
+});
+
+app.get('/api/health', (req, res) => {
+  res.status(200).json(healthResponse);
 });
 
 // API routes
