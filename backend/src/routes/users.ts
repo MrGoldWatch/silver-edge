@@ -125,13 +125,13 @@ router.get('/stats', authenticateToken, async (req: AuthenticatedRequest, res: R
 
     // Calculate statistics
     const totalHunts = hunts.length;
-    const totalRolls = hunts.reduce((sum, hunt) => sum + hunt.totalRolls, 0);
-    const totalCoinsChecked = hunts.reduce((sum, hunt) => sum + hunt.totalCoinsChecked, 0);
-    const totalSilverFound = hunts.reduce((sum, hunt) => sum + hunt.totalSilverFound, 0);
+    const totalRolls = hunts.reduce((sum: number, hunt: any) => sum + hunt.totalRolls, 0);
+    const totalCoinsChecked = hunts.reduce((sum: number, hunt: any) => sum + hunt.totalCoinsChecked, 0);
+    const totalSilverFound = hunts.reduce((sum: number, hunt: any) => sum + hunt.totalSilverFound, 0);
     const successRate = totalCoinsChecked > 0 ? ((totalSilverFound / totalCoinsChecked) * 100).toFixed(2) : '0.00';
 
     // Bank statistics
-    const bankStats = hunts.reduce((acc, hunt) => {
+    const bankStats = hunts.reduce((acc: any, hunt: any) => {
       if (!acc[hunt.bankName]) {
         acc[hunt.bankName] = {
           hunts: 0,
@@ -146,8 +146,8 @@ router.get('/stats', authenticateToken, async (req: AuthenticatedRequest, res: R
     }, {} as Record<string, any>);
 
     // Denomination statistics
-    const denominationStats = hunts.reduce((acc, hunt) => {
-      hunt.denominations.forEach(denom => {
+    const denominationStats = hunts.reduce((acc: any, hunt: any) => {
+      hunt.denominations.forEach((denom: any) => {
         if (!acc[denom.denomination]) {
           acc[denom.denomination] = {
             rolls: 0,
