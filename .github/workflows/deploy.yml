@@ -45,7 +45,7 @@ jobs:
       run: |
         cd backend
         echo "Deploying to Railway development environment..."
-        railway deploy --detach
+        railway deploy
       env:
         RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
 
@@ -54,7 +54,7 @@ jobs:
       run: |
         cd backend
         echo "Deploying to Railway production environment..."
-        railway deploy --detach
+        railway deploy
       env:
         RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
 
