@@ -45,7 +45,7 @@ jobs:
       run: |
         cd backend
         echo "Deploying to Railway development environment..."
-        railway up
+        railway up --service backend-dev
       env:
         RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
         RAILWAY_PROJECT_ID: 4b38ca53-0032-446a-93bb-1d48eb303d9b
@@ -55,7 +55,7 @@ jobs:
       run: |
         cd backend
         echo "Deploying to Railway production environment..."
-        railway up
+        railway up --service backend-prod
       env:
         RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
         RAILWAY_PROJECT_ID: 4b38ca53-0032-446a-93bb-1d48eb303d9b
