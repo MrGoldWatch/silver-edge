@@ -91,8 +91,6 @@ export const HomeScreen: React.FC = () => {
         console.error('Error loading local hunts:', localError);
         Alert.alert('Error', 'Failed to load hunt history');
       }
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -138,8 +136,10 @@ export const HomeScreen: React.FC = () => {
     setEditModalVisible(true);
   };
 
-  const handleHuntSaved = () => {
-    loadHunts(); // Reload hunts after saving
+  const handleHuntSaved = async () => {
+    console.log('Hunt saved, reloading hunts...');
+    await loadHunts(); // Reload hunts after saving
+    console.log('Hunts reloaded, current count:', hunts.length);
   };
 
   const handleHuntDeleted = () => {

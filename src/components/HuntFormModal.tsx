@@ -156,17 +156,19 @@ export const HuntFormModal: React.FC<HuntFormModalProps> = ({
     setIsLoading(true);
     try {
       // v2.0.0: Save to API for synchronization
-      console.log('Saving hunt to API...');
+      console.log('Saving hunt to API...', huntRequest);
       const apiHunt = await apiService.createHunt(huntRequest);
       console.log('Hunt saved to API:', apiHunt);
 
-      onHuntSaved(); // Notify parent to reload hunts
+      console.log('Calling onHuntSaved callback...');
+      await onHuntSaved(); // Notify parent to reload hunts
       Alert.alert('Success', 'Hunt saved successfully!');
       resetForm();
       onClose();
     } catch (error) {
       console.error('Error saving hunt:', error);
-      Alert.alert('Error', 'Failed to save hunt. Please try again.');
+      const errorMessage = error?.message || error?.error || 'Failed to save hunt. Please try again.';
+      Alert.alert('Error', errorMessage);
     } finally {
       setIsLoading(false);
     }
