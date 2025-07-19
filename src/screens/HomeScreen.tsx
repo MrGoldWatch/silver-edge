@@ -66,8 +66,16 @@ export const HomeScreen: React.FC = () => {
       const apiResponse = await apiService.getHunts();
       console.log('API response:', apiResponse);
       const apiHunts = apiResponse?.hunts || [];
-      console.log('API hunts loaded:', apiHunts.length);
-      setHunts(apiHunts);
+
+      // Sort hunts by updatedAt (most recent first)
+      const sortedHunts = apiHunts.sort((a, b) => {
+        const dateA = new Date(a.updatedAt || a.createdAt);
+        const dateB = new Date(b.updatedAt || b.createdAt);
+        return dateB.getTime() - dateA.getTime();
+      });
+
+      console.log('API hunts loaded:', sortedHunts.length);
+      setHunts(sortedHunts);
     } catch (error) {
       console.error('Error loading hunts from API:', error);
 
@@ -155,8 +163,16 @@ export const HomeScreen: React.FC = () => {
     try {
       const apiResponse = await apiService.getHunts();
       const apiHunts = apiResponse?.hunts || [];
-      setHunts(apiHunts);
-      console.log('Hunts reloaded, current count:', apiHunts.length);
+
+      // Sort hunts by updatedAt (most recent first)
+      const sortedHunts = apiHunts.sort((a, b) => {
+        const dateA = new Date(a.updatedAt || a.createdAt);
+        const dateB = new Date(b.updatedAt || b.createdAt);
+        return dateB.getTime() - dateA.getTime();
+      });
+
+      setHunts(sortedHunts);
+      console.log('Hunts reloaded, current count:', sortedHunts.length);
     } catch (error) {
       console.error('Error reloading hunts:', error);
       // Fallback to full reload if needed
