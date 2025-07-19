@@ -93,6 +93,9 @@ router.post('/', authenticateToken, async (req: AuthenticatedRequest, res: Respo
     const totalCoinsChecked = denominations.reduce((sum, d) => sum + (d.numberOfRolls * d.coinsPerRoll), 0);
     const totalSilverFound = denominations.reduce((sum, d) => sum + d.silverCoinsFound, 0);
 
+    // Calculate if hunt is fully processed (all denominations are processed)
+    const isProcessed = denominations.every(d => d.isProcessed);
+
     const hunt = await prisma.hunt.create({
       data: {
         ...huntData,
@@ -101,6 +104,7 @@ router.post('/', authenticateToken, async (req: AuthenticatedRequest, res: Respo
         totalRolls,
         totalCoinsChecked,
         totalSilverFound,
+        isProcessed,
         denominations: {
           create: denominations.map(d => ({
             ...d,
@@ -170,11 +174,15 @@ router.put('/:id', authenticateToken, async (req: AuthenticatedRequest, res: Res
       const totalCoinsChecked = denominations.reduce((sum, d) => sum + (d.numberOfRolls * d.coinsPerRoll), 0);
       const totalSilverFound = denominations.reduce((sum, d) => sum + d.silverCoinsFound, 0);
 
+      // Calculate if hunt is fully processed (all denominations are processed)
+      const isProcessed = denominations.every(d => d.isProcessed);
+
       updateData = {
         ...updateData,
         totalRolls,
         totalCoinsChecked,
         totalSilverFound,
+        isProcessed,
       };
 
       // Delete existing denominations and create new ones
