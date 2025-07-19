@@ -89,17 +89,18 @@ export const HuntEditModal: React.FC<HuntEditModalProps> = ({
       const updateRequest: UpdateHuntRequest = {
         id: hunt.id!,
         bankName: hunt.bankName,
-        branchName: hunt.branchName,
-        branchAddress: hunt.branchAddress,
-        branchNumber: hunt.branchNumber,
+        branchName: hunt.branchName || '',
+        branchAddress: hunt.branchAddress || '',
+        branchNumber: hunt.branchNumber || '',
         huntDate: hunt.huntDate.split('T')[0], // Format as YYYY-MM-DD
+        processingNotes: hunt.processingNotes || '',
         denominations: updatedDenominations.map(denom => ({
           denomination: denom.denomination,
           numberOfRolls: denom.numberOfRolls,
           coinsPerRoll: denom.coinsPerRoll,
           silverCoinsFound: denom.silverCoinsFound,
           isProcessed: denom.isProcessed,
-          processingNotes: denom.processingNotes,
+          processingNotes: denom.processingNotes || '',
         })),
       };
 
