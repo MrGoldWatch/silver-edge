@@ -26,6 +26,7 @@ export const HomeScreen: React.FC = () => {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [selectedHuntForEdit, setSelectedHuntForEdit] = useState<Hunt | null>(null);
+  const [editFromHuntList, setEditFromHuntList] = useState(false);
   const [huntFormModalVisible, setHuntFormModalVisible] = useState(false);
   const [huntListModalVisible, setHuntListModalVisible] = useState(false);
   const [statisticsModalVisible, setStatisticsModalVisible] = useState(false);
@@ -134,7 +135,17 @@ export const HomeScreen: React.FC = () => {
   };
 
   const handleEditHunt = (hunt: Hunt) => {
+    // For editing from home screen hunt cards
     setSelectedHuntForEdit(hunt);
+    setEditFromHuntList(false);
+    setEditModalVisible(true);
+  };
+
+  const handleEditHuntFromList = (hunt: Hunt) => {
+    // For editing from hunt list modal
+    setHuntListModalVisible(false);
+    setSelectedHuntForEdit(hunt);
+    setEditFromHuntList(true);
     setEditModalVisible(true);
   };
 
@@ -344,7 +355,7 @@ export const HomeScreen: React.FC = () => {
         visible={huntListModalVisible}
         onClose={() => setHuntListModalVisible(false)}
         hunts={hunts}
-        onEditHunt={handleEditHunt}
+        onEditHunt={handleEditHuntFromList}
         onHuntDeleted={handleHuntDeleted}
       />
 
@@ -366,6 +377,11 @@ export const HomeScreen: React.FC = () => {
           onClose={() => {
             setEditModalVisible(false);
             setSelectedHuntForEdit(null);
+            // Reopen hunt list modal only if edit was initiated from hunt list
+            if (editFromHuntList) {
+              setHuntListModalVisible(true);
+              setEditFromHuntList(false);
+            }
           }}
           onHuntSaved={handleHuntSaved}
           onHuntDeleted={handleHuntDeleted}
