@@ -2,6 +2,13 @@
 
 A comprehensive mobile application for coin roll hunters to track their silver coin discoveries, analyze success rates, and manage bank branch visits.
 
+## 🚀 Version 2.0.0 - Cloud Integration
+- Full cloud backend integration with Railway
+- PostgreSQL database for data persistence
+- Real-time hunt tracking and statistics
+- TestFlight distribution ready
+- GitHub Actions CI/CD pipeline
+
 ## 🪙 Overview
 
 Silver Edge helps coin roll hunters maintain detailed records of their hunting expeditions, track silver coin finds across different denominations, and analyze their success patterns over time. Built with React Native and Expo for cross-platform compatibility.
