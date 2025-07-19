@@ -17,15 +17,15 @@ import {
 } from '../types/api';
 
 // API Configuration
-// Use IP address for both iOS simulator and physical devices for consistency
+// Use Railway backend for production and development testing
 const getApiBaseUrl = () => {
   if (!__DEV__) {
-    return 'https://your-railway-app.railway.app/api';
+    return 'https://backend-dev-dev-9182.up.railway.app/api';
   }
 
-  // For development, use your computer's IP address for all devices
-  // This works for both iOS Simulator and physical devices
-  return 'http://192.168.254.67:3001/api';
+  // For development, use Railway backend for testing
+  // This allows us to test the live backend during development
+  return 'https://backend-dev-dev-9182.up.railway.app/api';
 };
 
 const API_BASE_URL = getApiBaseUrl();
@@ -157,9 +157,8 @@ class ApiService {
   async healthCheck(): Promise<any> {
     try {
       console.log('ApiService: Testing health check...');
-      // Use absolute URL for health check since it's not under /api
-      const healthUrl = API_BASE_URL.replace('/api', '/health');
-      const response = await axios.get(healthUrl);
+      // Use /api/health endpoint (Railway backend has both /health and /api/health)
+      const response = await this.client.get('/health');
       console.log('ApiService: Health check successful:', response.data);
       return response.data;
     } catch (error) {
