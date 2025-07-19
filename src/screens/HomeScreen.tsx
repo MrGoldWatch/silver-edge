@@ -315,7 +315,7 @@ export const HomeScreen: React.FC = () => {
           <Text style={styles.footerButtonText}>🔧 Test API</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.footerButton} onPress={handleViewHowTo}>
-          <Text style={styles.footerButtonText}>📚 How to Hunt Coins</Text>
+          <Text style={styles.footerButtonText}>📚 How to</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.footerButton} onPress={handleLogout}>
           <Text style={styles.footerButtonText}>Sign Out</Text>
