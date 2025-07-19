@@ -28,7 +28,7 @@ export class HuntMigration {
   }
 
   /**
-   * Check if a hunt object is in the new format
+   * Check if a hunt object is in the new format (includes API format)
    */
   static isNewHunt(hunt: any): hunt is Hunt {
     return hunt && Array.isArray(hunt.denominations);
@@ -93,6 +93,10 @@ export class HuntMigration {
    */
   static getSafeTotalCoinsChecked(hunt: any): number {
     if (this.isNewHunt(hunt)) {
+      // Handle API format (has totalCoinsChecked property) or local format
+      if (hunt.totalCoinsChecked !== undefined) {
+        return hunt.totalCoinsChecked;
+      }
       return HuntHelpers.getTotalCoinsChecked(hunt);
     } else if (this.isLegacyHunt(hunt)) {
       return hunt.totalCoinsChecked || 0;
@@ -102,6 +106,10 @@ export class HuntMigration {
 
   static getSafeTotalSilverFound(hunt: any): number {
     if (this.isNewHunt(hunt)) {
+      // Handle API format (has totalSilverFound property) or local format
+      if (hunt.totalSilverFound !== undefined) {
+        return hunt.totalSilverFound;
+      }
       return HuntHelpers.getTotalSilverFound(hunt);
     } else if (this.isLegacyHunt(hunt)) {
       return hunt.silverCoinsFound || 0;
@@ -111,6 +119,10 @@ export class HuntMigration {
 
   static getSafeIsProcessed(hunt: any): boolean {
     if (this.isNewHunt(hunt)) {
+      // Handle API format (has isProcessed property) or local format
+      if (hunt.isProcessed !== undefined) {
+        return hunt.isProcessed;
+      }
       return HuntHelpers.isFullyProcessed(hunt);
     } else if (this.isLegacyHunt(hunt)) {
       return hunt.isProcessed || false;
@@ -120,7 +132,13 @@ export class HuntMigration {
 
   static getSafeDenominationSummary(hunt: any): string {
     if (this.isNewHunt(hunt)) {
-      return HuntHelpers.getDenominationSummary(hunt);
+      // Handle both local Hunt format and API Hunt format
+      if (hunt.denominations && hunt.denominations.length > 0) {
+        return hunt.denominations
+          .map((denom: any) => `${denom.denomination} (${denom.numberOfRolls})`)
+          .join(', ');
+      }
+      return 'No denominations';
     } else if (this.isLegacyHunt(hunt)) {
       return `${hunt.denomination} (${hunt.numberOfRolls})`;
     }

@@ -17,6 +17,7 @@ import { Hunt, UpdateHuntRequest } from '../types/api';
 import apiService from '../services/api';
 import { HuntStorage } from '../services/HuntStorage';
 import { Hunt as LocalHunt } from '../types/Hunt';
+import { HuntMigration } from '../utils/HuntMigration';
 
 interface HuntEditModalProps {
   visible: boolean;
@@ -223,7 +224,7 @@ export const HuntEditModal: React.FC<HuntEditModalProps> = ({
               <Text style={styles.huntInfoSubtext}>📍 {hunt.branchAddress}</Text>
             )}
             <Text style={styles.huntInfoText}>
-              📅 {new Date(hunt.date).toLocaleDateString()}
+              📅 {new Date(hunt.huntDate || hunt.date).toLocaleDateString()}
             </Text>
             <Text style={styles.huntInfoText}>
               🪙 {HuntMigration.getSafeDenominationSummary(hunt)}
