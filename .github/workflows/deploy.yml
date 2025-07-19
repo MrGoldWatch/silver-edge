@@ -60,18 +60,18 @@ jobs:
         RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
         RAILWAY_PROJECT_ID: 4b38ca53-0032-446a-93bb-1d48eb303d9b
 
-    - name: Run database migrations (Development)
+    - name: Sync database schema (Development)
       if: github.ref == 'refs/heads/2.0.0'
       run: |
         cd backend
-        npx prisma migrate deploy
+        npx prisma db push
       env:
         DATABASE_URL: ${{ secrets.DEV_DATABASE_URL }}
 
-    - name: Run database migrations (Production)
+    - name: Sync database schema (Production)
       if: github.ref == 'refs/heads/main'
       run: |
         cd backend
-        npx prisma migrate deploy
+        npx prisma db push
       env:
         DATABASE_URL: ${{ secrets.PROD_DATABASE_URL }}
