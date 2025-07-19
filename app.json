@@ -2,7 +2,7 @@
   "expo": {
     "name": "Silver Edge",
     "slug": "silver-edge",
-    "version": "1.0.0",
+    "version": "2.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -15,7 +15,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.silveredge.app",
-      "buildNumber": "1.0.0",
+      "buildNumber": "2.0.0",
       "infoPlist": {
         "UIBackgroundModes": [
           "background-processing"
