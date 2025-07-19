@@ -64,7 +64,7 @@ export const HomeScreen: React.FC = () => {
       console.log('Loading hunts from API...');
       const apiResponse = await apiService.getHunts();
       console.log('API response:', apiResponse);
-      const apiHunts = apiResponse?.data || [];
+      const apiHunts = apiResponse?.hunts || [];
       console.log('API hunts loaded:', apiHunts.length);
       setHunts(apiHunts);
     } catch (error) {
