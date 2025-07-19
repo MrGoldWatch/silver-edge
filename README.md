@@ -1,4 +1,4 @@
-# Silver Edge - Coin Roll Hunting Tracker
+# Silver Seeker - Coin Roll Hunting Tracker
 
 A comprehensive mobile application for coin roll hunters to track their silver coin discoveries, analyze success rates, and manage bank branch visits.
 
@@ -11,7 +11,7 @@ A comprehensive mobile application for coin roll hunters to track their silver c
 
 ## 🪙 Overview
 
-Silver Edge helps coin roll hunters maintain detailed records of their hunting expeditions, track silver coin finds across different denominations, and analyze their success patterns over time. Built with React Native and Expo for cross-platform compatibility.
+Silver Seeker helps coin roll hunters maintain detailed records of their hunting expeditions, track silver coin finds across different denominations, and analyze their success patterns over time. Built with React Native and Expo for cross-platform compatibility.
 
 ## ✨ Features
 

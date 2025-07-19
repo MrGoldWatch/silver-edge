@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "Silver Edge",
-    "slug": "silver-edge",
+    "name": "Silver Seeker",
+    "slug": "silver-seeker",
     "version": "2.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -14,7 +14,7 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.silveredge.app",
+      "bundleIdentifier": "com.silverseeker.app",
       "buildNumber": "2.0.0",
       "infoPlist": {
         "UIBackgroundModes": [
@@ -37,6 +37,7 @@
       }
     },
     "android": {
+      "package": "com.silverseeker.app",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
