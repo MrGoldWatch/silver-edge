@@ -87,6 +87,7 @@ export const HuntEditModal: React.FC<HuntEditModalProps> = ({
       });
 
       const updateRequest: UpdateHuntRequest = {
+        id: hunt.id!,
         bankName: hunt.bankName,
         branchName: hunt.branchName,
         branchAddress: hunt.branchAddress,
@@ -103,7 +104,7 @@ export const HuntEditModal: React.FC<HuntEditModalProps> = ({
       };
 
       // v2.0.0: Update via API for synchronization
-      console.log('Updating hunt via API...');
+      console.log('Updating hunt via API...', updateRequest);
       const updatedHunt = await apiService.updateHunt(hunt.id!, updateRequest);
       console.log('Hunt updated via API:', updatedHunt);
 
@@ -112,7 +113,8 @@ export const HuntEditModal: React.FC<HuntEditModalProps> = ({
       onClose();
     } catch (error) {
       console.error('Error updating hunt:', error);
-      Alert.alert('Error', 'Failed to update hunt. Please try again.');
+      const errorMessage = error?.response?.data?.error || error?.message || 'Failed to update hunt. Please try again.';
+      Alert.alert('Error', errorMessage);
     } finally {
       setIsLoading(false);
     }

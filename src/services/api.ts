@@ -246,9 +246,11 @@ class ApiService {
     }
   }
 
-  async updateHunt(id: string, data: Partial<CreateHuntRequest>): Promise<Hunt> {
+  async updateHunt(id: string, data: UpdateHuntRequest): Promise<Hunt> {
     try {
-      const response = await this.client.put<{ hunt: Hunt }>(`/hunts/${id}`, data);
+      // Remove id from data since it's passed as URL parameter
+      const { id: _, ...updateData } = data;
+      const response = await this.client.put<{ hunt: Hunt }>(`/hunts/${id}`, updateData);
       return response.data.hunt;
     } catch (error) {
       throw error;
