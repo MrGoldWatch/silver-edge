@@ -91,6 +91,8 @@ export const HomeScreen: React.FC = () => {
         console.error('Error loading local hunts:', localError);
         Alert.alert('Error', 'Failed to load hunt history');
       }
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -138,8 +140,17 @@ export const HomeScreen: React.FC = () => {
 
   const handleHuntSaved = async () => {
     console.log('Hunt saved, reloading hunts...');
-    await loadHunts(); // Reload hunts after saving
-    console.log('Hunts reloaded, current count:', hunts.length);
+    // Don't show loading spinner for hunt refresh, just reload data
+    try {
+      const apiResponse = await apiService.getHunts();
+      const apiHunts = apiResponse?.hunts || [];
+      setHunts(apiHunts);
+      console.log('Hunts reloaded, current count:', apiHunts.length);
+    } catch (error) {
+      console.error('Error reloading hunts:', error);
+      // Fallback to full reload if needed
+      await loadHunts();
+    }
   };
 
   const handleHuntDeleted = () => {
