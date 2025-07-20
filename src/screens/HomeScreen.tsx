@@ -16,6 +16,7 @@ import { HuntStorage } from '../services/HuntStorage';
 import { HuntEditModal } from '../components/HuntEditModal';
 import { HuntFormModal } from '../components/HuntFormModal';
 import { HuntListModal } from '../components/HuntListModal';
+import { AppHeader } from '../components/AppHeader';
 import { StatisticsScreen } from './StatisticsScreen';
 import { HowToScreen } from './HowToScreen';
 
@@ -235,6 +236,9 @@ export const HomeScreen: React.FC = () => {
         </View>
       )}
 
+      {/* App Header with Logo and Branding */}
+      <AppHeader />
+
       <ScrollView
         style={styles.scrollContainer}
         refreshControl={
@@ -349,9 +353,11 @@ export const HomeScreen: React.FC = () => {
 
       {/* Footer */}
       <View style={styles.footer}>
-        <TouchableOpacity style={styles.footerButton} onPress={testApiConnection}>
-          <Text style={styles.footerButtonText}>🔧 Test API</Text>
-        </TouchableOpacity>
+        {__DEV__ && (
+          <TouchableOpacity style={styles.footerButton} onPress={testApiConnection}>
+            <Text style={styles.footerButtonText}>🔧 Test API</Text>
+          </TouchableOpacity>
+        )}
         <TouchableOpacity style={styles.footerButton} onPress={handleViewHowTo}>
           <Text style={styles.footerButtonText}>📚 How to</Text>
         </TouchableOpacity>

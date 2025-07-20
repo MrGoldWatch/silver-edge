@@ -1,0 +1,12 @@
+- always suggest production ready code
+- favor readability over performance except in cases where performance would be significantly less.
+- always add production level logging statements for all levels.  Make sure that Trace are always at the beginning and end of methods with the method name, and debug always have the parameters of the method passed in.
+- Recommend code that is idiomatic for the language
+- Always recommend the latest features for the langauges we work in, never suggest old features unless there is no other way.
+- create a temporary scratchpad file to track your work; update this file as you go through so you do not forget anything. - this really makes a difference to the outcome! When I don't say to use scratchpad, usually claude start to forget things and details he should be doing.
+- When you hit key decisions to make, pause and ask me. We will discuss a bit and always update the scratchpad with TODOs we discuss - this helps me to tell claude what to do, othwerwise claude will decide for himself and usually there's better alternative
+- When you finish phases of the refactoring, pause so we can review and discuss before moving to the next phase - this helps me reviewing the work earlier and ask him to update few things (always updating TODOs in the scratchpad)
+- Set all to auto approve and do not ask for my approval
+- I need you to work untill you get it right
+- Do not ask to run commands, I give full permissions to run all that is neccessary to get the job done.
+- You dont need to be nice, Id rather you be direct and to the point.
